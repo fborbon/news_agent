@@ -1,18 +1,21 @@
 # 🌍 Global News Intelligence Agent
 
-> A multi-agent AI system that scrapes, analyses, and summarises the world's top newspapers every day — detecting breaking events across 8 countries and generating a fully static news website, powered by Claude.
+**🔴 Live site → [https://fborbon.github.io/news_agent/](https://fborbon.github.io/news_agent/)**
 
-![Python](https://img.shields.io/badge/Python-3.11+-blue)
-![Claude](https://img.shields.io/badge/Claude-Sonnet%204.6-purple)
-![License](https://img.shields.io/badge/License-MIT-green)
+> A multi-agent AI system that scrapes, summarises, and analyses the world's top newspapers every day — covering **25 countries · 75 RSS sources** — and publishing a fully static news website powered by Claude.
+
+![Python](https://img.shields.io/badge/Python-3.11+-3776ab?logo=python&logoColor=white)
+![Claude](https://img.shields.io/badge/Claude-Sonnet%204.6-7c3aed?logo=anthropic&logoColor=white)
+![Agents](https://img.shields.io/badge/Agentic%20AI-Tool%20Use-16a085)
+![License](https://img.shields.io/badge/License-MIT-22c55e)
 
 ---
 
 ## Table of Contents
 
 1. [Project Overview](#1-project-overview)
-2. [AI Technologies Used](#2-ai-technologies-used)
-3. [Models: Selection, Strengths & Configuration](#3-models-selection-strengths--configuration)
+2. [AI Technologies Used in this Project](#2-ai-technologies-used-in-this-project)
+3. [Models — Selection, Strengths & Configuration](#3-models--selection-strengths--configuration)
 4. [Data Processing Pipeline — Step by Step](#4-data-processing-pipeline--step-by-step)
 5. [Libraries Reference](#5-libraries-reference)
 6. [Architecture & Data-Flow Diagrams](#6-architecture--data-flow-diagrams)
@@ -25,661 +28,555 @@
 
 ## 1. Project Overview
 
-This project demonstrates a production-grade **multi-agent AI pipeline** built on Anthropic's Claude API. Instead of a single monolithic prompt, the workload is split across specialised agents that communicate via **tool use** (function calling): an Orchestrator delegates tasks to a Scraper, a Summariser, and a Breaking News Detector — each backed by its own Claude model instance, system prompt, and toolset.
+This portfolio project demonstrates a **production-grade agentic AI pipeline** built on Anthropic's Claude API. The system runs daily, ingesting live news from 25 countries, and publishes a fully static HTML news site that anyone can read without a running server.
 
-Every day the system:
+### What it does every day
 
-| Step | What happens |
-|------|-------------|
-| **Scrape** | Fetches RSS feeds from 24 newspapers across 8 countries |
-| **Extract** | Pulls full article text from the top articles per source |
-| **Summarise** | Claude produces a structured digest per region |
-| **Detect** | Claude scans the full article pool for high-impact breaking events |
-| **Synthesise** | Claude merges multiple-source coverage of the same event |
-| **Publish** | Jinja2 renders a complete static HTML site with source links |
+| Step | Agent / Component | Output |
+|------|-------------------|--------|
+| **Scrape** | `ScraperAgent` | Up to 300 raw articles (30/country) |
+| **Extract** | `ScraperAgent` | Full article text via trafilatura |
+| **Summarise** | `SummarizerAgent` + Claude | 8 curated stories per country with source links |
+| **Detect** | `BreakingNewsAgent` + Claude | Up to 15 cross-source breaking events |
+| **Publish** | `WebGenerator` + Jinja2 | 27 static HTML pages |
 
-### Monitored sources (3 per country)
+### Monitored countries — 3 sources each
 
-| Region | Newspapers |
+| Region | Countries |
 |--------|-----------|
-| 🇺🇸 USA | The New York Times · The Washington Post · NPR News |
-| 🇬🇧 UK | BBC News · The Guardian · Sky News |
-| 🇫🇷 France | Le Monde · Le Figaro · France 24 |
-| 🇩🇪 Germany | Deutsche Welle · Der Spiegel International · Die Zeit |
-| 🇪🇸 Spain | El País (EN) · El Mundo · La Vanguardia |
-| 🇯🇵 Japan | The Japan Times · NHK World · Asahi Shimbun |
-| 🇨🇳 China | South China Morning Post · China Daily · Global Times |
-| 🇮🇹 Italy | ANSA · La Repubblica · Corriere della Sera |
+| 🌎 Americas | 🇺🇸 USA · 🇬🇧 UK · 🇨🇦 Canada · 🇲🇽 Mexico · 🇧🇷 Brazil |
+| 🌍 Europe | 🇫🇷 France · 🇩🇪 Germany · 🇪🇸 Spain · 🇮🇹 Italy · 🇷🇺 Russia · 🇺🇦 Ukraine · 🇹🇷 Turkey |
+| 🌏 Asia-Pacific | 🇯🇵 Japan · 🇨🇳 China · 🇮🇳 India · 🇦🇺 Australia · 🇹🇼 Taiwan · 🇸🇬 Singapore · 🇰🇷 South Korea |
+| 🕌 Middle East | 🇸🇦 Saudi Arabia · 🇮🇷 Iran · 🇦🇪 UAE |
+| 🌍 Africa | 🇿🇦 South Africa · 🇲🇦 Morocco · 🇪🇬 Egypt |
 
 ---
 
-## 2. AI Technologies Used
+## 2. AI Technologies Used in this Project
 
-### 2.1 Large Language Models (LLMs)
+> **Scope note:** Only technologies actually present in the codebase are explained here.
+> Speech-to-text, image diffusion, image classification, RAG, and fine-tuning are **not** used.
 
-A **Large Language Model** is a neural network trained on vast text corpora to predict the next token in a sequence. Through this objective — applied at enormous scale — the model acquires the ability to read, reason, and write like a skilled human. Modern LLMs use the **Transformer architecture** (Vaswani et al., 2017), whose **self-attention mechanism** allows every token to attend to every other token in the context, capturing long-range dependencies that earlier recurrent networks struggled with.
+---
 
-At inference time, the model receives a **context window** (a sequence of tokens representing the conversation, instructions, tools, and history) and produces a probability distribution over the vocabulary at each step, sampling the most likely next token until a stopping condition is met.
+### 2.1 Generative AI (GenAI)
 
-**How this project uses LLMs:**
+**Generative AI** refers to models that can produce new content — text, images, audio, code — rather than just classifying or predicting from existing patterns. These models are trained on vast corpora and learn to generate statistically plausible, coherent output conditioned on a prompt.
 
-| Agent | Task | Why an LLM and not rules? |
-|-------|------|--------------------------|
-| `SummarizerAgent` | Read 15–30 raw articles and write a structured digest | Requires reading comprehension, cross-article deduplication, multi-language understanding, and editorial judgement — infeasible with heuristics |
-| `BreakingNewsAgent` | Scan 229 article headlines across 8 countries, classify by event type, synthesise cross-source perspectives | Requires semantic understanding of geopolitical context and the ability to group related stories across different languages and framings |
+**How this project uses GenAI:**
+Claude generates every summary, digest, and breaking-news analysis in the pipeline. Given a set of raw article texts, Claude *writes* editorial-quality journalism: thematic overviews, concise story summaries in English (regardless of the source language), severity assessments, and cross-source perspective analyses. This is pure generative output — not retrieved from a database, not templated, and not reproducible by rule-based code.
 
-### 2.2 Tool Use / Function Calling
+---
 
-**Tool use** (also called *function calling*) is the mechanism by which an LLM can request the execution of external code mid-conversation. Instead of free-form text, the model returns a structured `tool_use` block containing a function name and typed JSON arguments. The calling application executes the function, returns a `tool_result`, and the model continues — potentially calling more tools — until it reaches `end_turn`.
+### 2.2 Large Language Models (LLMs)
 
-This enables **agentic behaviour**: the model drives a multi-step process, using tools to perceive the world, take actions, and update its reasoning based on results.
+A **Large Language Model** is a Transformer-based neural network trained on internet-scale text corpora using the **next-token prediction** objective. The Transformer's **self-attention mechanism** allows every token in the context to attend to every other token simultaneously, capturing arbitrarily long-range dependencies. Through training at scale, LLMs acquire emergent abilities: reading comprehension, translation, summarisation, reasoning, and instruction following.
+
+At inference time the model receives a **context window** — a flat sequence of tokens containing the system prompt, conversation history, tool definitions, and user messages — and auto-regressively samples the most likely continuation until a stopping condition is met.
+
+**Key LLM properties used in this project:**
+
+| Property | How it's exploited |
+|----------|--------------------|
+| **Multilingual comprehension** | Claude reads French, Spanish, Italian, German, Portuguese, Arabic, Turkish, Korean feeds and summarises them in English without a separate translation step |
+| **200 K-token context window** | The SummarizerAgent fits 30 articles (≈15 K tokens) in a single call; the BreakingNewsAgent fits 200 curated stories (≈10 K tokens) in one call |
+| **Instruction following** | System-prompt contracts ("return ONLY raw JSON, no markdown fences") are obeyed reliably enough to build automated pipelines on top |
+| **Parametric world knowledge** | Claude knows that *The Japan Times* is Japanese, that a Hormuz blockade affects oil prices, that ICBM stands for intercontinental ballistic missile — so summaries are contextually correct without extra retrieval |
+
+---
+
+### 2.3 Agentic AI
+
+**Agentic AI** is the paradigm of deploying LLMs not as single-turn question-answerers but as autonomous agents that plan, take actions (calling tools or other agents), observe results, and iterate — all within a single logical task.
+
+The core mechanism is the **agentic loop**:
+
+```
+prompt → LLM reasons → emits tool_use → tool executes → result returned → LLM continues
+         ↑___________________________ repeat until end_turn __________________________|
+```
+
+This project implements two established agentic design patterns:
+
+**Pattern A — Tool-Use Loop (`BaseAgent.run`)**
+The `SummarizerAgent` inherits `BaseAgent` and drives Claude through a multi-turn conversation: it sends articles, Claude calls `build_regional_digest` (a deliberate reasoning scaffold), Python returns an acknowledgment, and Claude then emits the final JSON digest. The loop retries automatically on rate-limit errors with exponential back-off (60 s → 120 s → 240 s → 300 s cap).
+
+**Pattern B — Agents-as-Tools (Orchestrator)**
+The `OrchestratorAgent` treats each specialist (`ScraperAgent`, `SummarizerAgent`, `BreakingNewsAgent`) as a callable sub-system, sequencing them through a Python loop. This mirrors the pattern used inside Claude's own computer-use and multi-step task features — higher-level coordinators delegate to specialised workers.
+
+**Why not a single monolithic prompt?**
+Splitting work across agents gives: independent failure recovery (each region saved to disk immediately), model routing (cheap model for I/O, capable model for reasoning), and clean separation of concerns that makes the codebase testable.
+
+---
+
+### 2.4 Tool Use / Function Calling
+
+**Tool use** (also called *function calling*) is the API mechanism by which an LLM mid-conversation requests the execution of external code. The model returns a structured `tool_use` block — a JSON object with a function name and typed arguments. The calling application executes the function, returns a `tool_result`, and the model continues reasoning.
 
 ```
 User message
     ↓
-Claude reasons about task
+Claude reasons
     ↓
-Claude emits tool_use { name, input }   ← structured JSON call
+{ "type": "tool_use", "name": "build_regional_digest", "input": {...} }   ← LLM output
     ↓
-Python executes the tool
+Python executes _dispatch_tool("build_regional_digest", input)
     ↓
-tool_result returned to Claude          ← structured JSON result
+{ "type": "tool_result", "content": "{\"status\": \"ready\"}" }            ← Python output
     ↓
-Claude continues reasoning
-    ↓
-... (loop until stop_reason == "end_turn")
-    ↓
-Claude emits final text response
+Claude resumes and emits final JSON digest
 ```
 
 **Tools defined in this project:**
 
-| Agent | Tool | What it enables |
-|-------|------|----------------|
-| `SummarizerAgent` | `build_regional_digest` | Signals Claude that all articles are loaded; forces a deliberate reasoning step before outputting JSON |
-| `BreakingNewsAgent` | `report_event` | Claude calls this once per breaking event, depositing structured metadata (title, category, summary, sources, severity) into a Python list without needing a free-form JSON block |
-| `BreakingNewsAgent` | `finish_detection` | Claude signals completion; triggers `_StopAgent` to exit the loop without an extra API round-trip |
+| Agent | Tool | Purpose |
+|-------|------|---------|
+| `SummarizerAgent` | `build_regional_digest` | Forces Claude to commit to a "ready" state before writing the digest — acts as a deliberate reasoning step, not computation |
 
-### 2.3 Structured Output via System Prompts
-
-LLMs do not natively output valid JSON — they generate text token by token. To get reliable structured data, this project uses two complementary techniques:
-
-1. **Strict system-prompt contracts**: every agent's system prompt specifies the exact JSON schema and includes rules like *"Return ONLY valid JSON — no markdown fences, no commentary"* and *"The `url` field MUST be the exact URL from the input article"*.
-2. **Tool-call accumulation**: the `BreakingNewsAgent` never relies on a final JSON blob — it accumulates events incrementally via `report_event` tool calls, each of which has a typed schema enforced by the Anthropic API.
-
-### 2.4 Agentic Patterns
-
-This project implements two established agentic design patterns:
-
-**Pattern 1 — Tool-Use Loop (`BaseAgent.run`)**
-The core loop in `base_agent.py` implements the standard agentic cycle: send prompt → receive response → if tool calls present, execute and return results → repeat until `end_turn`. Each agent subclass is an independent reasoning unit with its own loop.
-
-**Pattern 2 — Agents as Tools (Orchestrator)**
-The `OrchestratorAgent` treats `ScraperAgent`, `SummarizerAgent`, and `BreakingNewsAgent` as callable sub-systems. This is the same pattern used by Claude's own computer-use and multi-step task features — higher-level planners delegate to specialised workers.
-
-> **Note — what this project does NOT use:**
-> RAG (Retrieval-Augmented Generation), vector databases, embeddings, image models, speech-to-text, or fine-tuning are not part of this pipeline. All knowledge comes from live RSS feeds fetched at runtime, not from a vector store. The LLM's parametric knowledge is used only for language understanding and editorial reasoning.
+> **Design note:** The `BreakingNewsAgent` was originally designed with `report_event` / `finish_detection` tools. In production the multi-turn context (25 countries × articles payload + accumulated tool-call history) repeatedly exceeded the 30 K token/minute rate limit. It was redesigned as a **single direct call** — sending the 200 curated digest stories and receiving the complete JSON event array in one response. This is documented honestly because real-world engineering always involves such trade-offs.
 
 ---
 
-## 3. Models: Selection, Strengths & Configuration
+### 2.5 Structured Output via Prompt Contracts
+
+Claude is an LLM — it generates text token by token. Getting reliable JSON requires two complementary techniques:
+
+1. **System-prompt schema contracts:** every agent's system prompt specifies the exact JSON structure with concrete examples and hard rules (`"Return ONLY raw JSON — no markdown fences"`, `"The 'url' field MUST be the exact URL from the input article"`).
+2. **Fence stripping:** despite the instruction, Claude occasionally wraps output in markdown code fences. `BaseAgent._parse_result()` and `BreakingNewsAgent.detect()` both strip `` ```json … ``` `` wrappers before `json.loads()`.
+
+---
+
+## 3. Models — Selection, Strengths & Configuration
 
 ### 3.1 Claude Sonnet 4.6
 
-**Used by:** `SummarizerAgent`, `BreakingNewsAgent`
+**Used by:** `SummarizerAgent` (per-region digests) and `BreakingNewsAgent` (global event detection)
 
-Claude Sonnet 4.6 is Anthropic's mid-tier frontier model — positioned between the fastest (Haiku) and most capable (Opus) models. It was chosen for the two reasoning-heavy tasks in this pipeline.
+Claude Sonnet 4.6 is Anthropic's mid-tier frontier model — positioned between the fastest (Haiku) and most capable (Opus) models. It is trained with **Constitutional AI (CAI)** and **RLHF** (Reinforcement Learning from Human Feedback) to follow instructions precisely, produce safe outputs, and reason accurately across long contexts.
 
-**Architecture (public information):**
-- Transformer-based, trained with **Constitutional AI (CAI)** and **RLHF** (Reinforcement Learning from Human Feedback) to follow instructions precisely and produce safe, factual outputs
-- **200,000-token context window** — sufficient to hold 229 article summaries in one call without chunking
-- Strong **instruction following**: reliably honours schema contracts ("return exactly this JSON structure")
-- Native **multilingual reading comprehension**: can read French, German, Spanish, Italian, Japanese feeds and summarise them in English
+**Why Sonnet and not Opus or Haiku?**
 
-**Why not Opus?** Opus is more capable but 5× more expensive and slower. For editorial summarisation of news digests, Sonnet's quality is indistinguishable in practice.
+| Criterion | Haiku | **Sonnet 4.6** | Opus |
+|-----------|-------|----------------|------|
+| Editorial summary quality | Too terse, schema violations | ✅ Excellent | Marginally better |
+| Multilingual comprehension | Adequate | ✅ Strong | Strong |
+| Instruction following (JSON) | Unreliable | ✅ Reliable | Very reliable |
+| Cost per region call | Cheapest | ✅ Balanced | 5× more expensive |
+| Speed | Fastest | ✅ Fast enough | Slowest |
 
-**Why not Haiku?** Haiku is faster and cheaper but produces shorter, less nuanced summaries and is more likely to violate JSON schema contracts on complex outputs.
+**Strengths relevant to this project:**
+- **200 K-token context window** — fits entire regional article batches without chunking
+- **Multilingual** — reads French, Arabic, Japanese, Korean, Portuguese, Turkish without translation
+- **Consistent schema adherence** — reliably follows the system-prompt JSON contract
+- **Long-form coherent output** — 15-event JSON arrays with multi-paragraph summaries
 
-**Configuration in this project:**
+**Configuration per agent:**
 
 | Parameter | SummarizerAgent | BreakingNewsAgent | Rationale |
 |-----------|:--------------:|:-----------------:|-----------|
 | `model` | `claude-sonnet-4-6` | `claude-sonnet-4-6` | Best cost/quality for editorial reasoning |
-| `max_tokens` | `4096` | `8192` | Breaking news may detect many events; extra budget avoids truncation |
-| `temperature` | API default (`1.0`) | API default (`1.0`) | Not overridden — default temperature is appropriate for factual summarisation tasks where Claude is already constrained by the system prompt |
-| `tools` | `[build_regional_digest]` | `[report_event, finish_detection]` | Minimal toolsets reduce ambiguity |
-| `system` | Editorial digest contract | Event-detection contract with URL-preservation rule | System prompts function as the model's operating charter |
+| `max_tokens` | `4096` | `16 000` | Breaking news for 25 countries can yield 15 events × ~1 500 chars ≈ 22 500 chars; 16 K tokens prevents truncation |
+| `temperature` | API default | API default | Not overridden — default is appropriate for factual summarisation constrained by system prompt |
+| `tools` | `[build_regional_digest]` | *(none — single call)* | Minimal toolsets reduce prompt tokens and ambiguity |
+| Retry strategy | Exponential back-off | Exponential back-off | 60 s → 120 s → 240 s → 300 s cap on `RateLimitError` |
 
 **Key system-prompt design decisions:**
 
-- **URL preservation rule**: `"The 'url' field MUST be the exact URL from the input article. Never invent or modify URLs."` This exploits Claude's strong instruction-following to prevent hallucinated links.
-- **Language normalisation**: `"Write in clear, journalistic English regardless of the source language."` Allows ingesting French, Spanish, Italian, German, and Japanese feeds without a separate translation step.
-- **Schema enforcement**: output format is shown as a concrete example inside the system prompt, not described abstractly — concrete examples outperform abstract descriptions for JSON fidelity.
+- **URL-preservation rule** (`"The 'url' field MUST be the exact URL from the input article. Never invent URLs."`) — exploits Claude's instruction following to prevent hallucinated links in 100% of tested runs.
+- **Language normalisation** (`"Write in clear, journalistic English regardless of the source language."`) — eliminates a separate translation step across 14 non-English feed languages.
+- **Concrete schema examples** in the prompt outperform abstract descriptions for JSON fidelity.
+- **15-event cap** in the BreakingNewsAgent system prompt prevents response truncation under the `max_tokens` budget.
 
 ### 3.2 Claude Haiku 4.5
 
-**Defined in config as `SCRAPER_MODEL`; reserved for future use.**
-
-Haiku is the fastest and most cost-efficient Claude model, designed for high-volume I/O tasks. It is pre-configured for the Scraper role, where speed matters more than reasoning depth. In the current implementation, scraping is handled by direct Python code (no LLM needed), but Haiku is wired in for potential future enrichment tasks such as per-article classification or headline normalisation.
+**Defined in `config.SCRAPER_MODEL`; reserved for future use.**
+Haiku is Anthropic's fastest and cheapest model. It is pre-wired as the scraping model for potential future tasks such as per-article topic classification or paywall detection. In the current implementation, scraping is pure Python — no LLM overhead needed for I/O work.
 
 ---
 
 ## 4. Data Processing Pipeline — Step by Step
 
-### Step 1 — Trigger
+### Step 1 — Trigger (`scheduler.py`)
 
-`APScheduler` fires a `CronTrigger` at **07:00 UTC** daily. The trigger calls `OrchestratorAgent.run_pipeline()`, which loops through all 8 regions sequentially.
+`APScheduler` fires a `BlockingScheduler` with a `CronTrigger` at **07:00 UTC** daily.
+`misfire_grace_time=3600` allows the job to execute up to one hour late (after a restart).
 
 ```
-APScheduler.CronTrigger(hour=7, minute=0)
+APScheduler.CronTrigger(hour=7, minute=0, timezone="UTC")
     └─► OrchestratorAgent.run_pipeline(resume=False)
 ```
 
-**Key file:** `scheduler.py`, `agents/orchestrator.py:35`
+---
+
+### Step 2 — RSS Ingestion (`ScraperAgent._fetch_rss`) — *Python only*
+
+`feedparser.parse(url)` fetches and parses each RSS/Atom feed. It handles RSS 0.9x / 2.0 / Atom 1.0 dialect differences, encoding detection (UTF-8, Latin-1, Windows-1252), and malformed XML — all transparently.
+
+**Extracted per entry:** `title`, `link` (article URL), `published`, `summary` (first 800 chars of feed description).
+
+**Parameters:** up to `MAX_ARTICLES_PER_SOURCE = 10` entries per source · `User-Agent: NewsAgent/1.0` · `RSS_TIMEOUT = 15 s`.
+
+**File:** `agents/scraper_agent.py:44`
 
 ---
 
-### Step 2 — RSS Ingestion (`ScraperAgent._fetch_rss`)
+### Step 3 — Article Content Extraction (`ScraperAgent._extract_content`) — *Python only*
 
-For each of the 3 sources in a region, `feedparser.parse()` fetches and parses the RSS/Atom XML feed. `feedparser` handles encoding detection, malformed XML, and the many RSS dialect variants (RSS 0.9x, RSS 2.0, Atom 1.0) automatically.
+For the top `FULL_CONTENT_LIMIT = 5` articles per source:
 
-**What is extracted per entry:**
+1. `httpx.Client.get(url)` downloads raw HTML with redirect following and a 15-second timeout.
+2. `trafilatura.extract(html)` strips navigation bars, ads, cookie banners, sidebars, and comment sections, returning clean article body text.
+3. Output is capped at `MAX_ARTICLE_CHARS = 4 000` characters.
 
-| Field | Source | Example |
-|-------|--------|---------|
-| `title` | `entry.title` | `"Iran War Costs Hit $29 Billion"` |
-| `url` | `entry.link` | `https://www.npr.org/2026/05/13/...` |
-| `published` | `entry.published` | `"Tue, 13 May 2026 11:00:00 +0000"` |
-| `summary` | `entry.summary` | First 800 chars of the feed description |
+**Fallback:** if extraction fails (paywall, JavaScript-only, timeout), the RSS `summary` field is used instead.
 
-**Parameters:**
-- Up to `MAX_ARTICLES_PER_SOURCE = 10` entries fetched per source
-- `User-Agent: NewsAgent/1.0` header sent to avoid bot-detection blocks
-- `RSS_TIMEOUT = 15` seconds per request
-
-**Key file:** `agents/scraper_agent.py:44`
+**File:** `agents/scraper_agent.py:65`
 
 ---
 
-### Step 3 — Article Content Extraction (`ScraperAgent._extract_content`)
+### Step 4 — Article Slimming (in-memory, before LLM)
 
-For the top `FULL_CONTENT_LIMIT = 5` articles per source, the full article page is downloaded and parsed.
-
-1. `httpx.Client.get(url)` downloads the raw HTML with redirect following and a 15-second timeout
-2. `trafilatura.extract(html)` applies its content-extraction algorithm to return the clean article body, stripping navigation menus, ads, footers, cookie banners, and comment sections
-
-The result is truncated to `MAX_ARTICLE_CHARS = 4000` characters before passing to Claude, to control token costs while retaining enough context for summarisation.
-
-**Fallback:** if extraction fails (paywalled, JavaScript-only, or timeout), the RSS `summary` field is used instead.
-
-**Key file:** `agents/scraper_agent.py:65`
-
----
-
-### Step 4 — Article Slimming (pre-LLM preparation)
-
-Before handing articles to Claude, `SummarizerAgent.summarize_region()` creates a slimmed representation:
+Before handing articles to Claude, `SummarizerAgent.summarize_region()` trims each article to 2 000 characters and retains only the fields Claude needs:
 
 ```python
-slim = [
-    {
-        "title":       article["title"],
-        "source":      article["source"],
-        "url":         article["url"],          # preserved verbatim for link fidelity
-        "source_home": article["source_home"],  # newspaper homepage for verification
-        "published":   article["published"],
-        "content":     article["content"][:2000],   # 2000-char cap per article
-    }
-    for article in articles
-]
+slim = [{"title": …, "source": …, "url": …, "source_home": …, "content": content[:2000]}
+        for article in articles]
 ```
 
-This keeps the Claude input for each region under ~15,000 tokens, staying comfortably within the 30,000 token/minute rate limit.
+This keeps the per-region Claude input under **~15 K tokens** — comfortably within one API call and under the 30 K token/minute rate limit.
 
-**Key file:** `agents/summarizer_agent.py:75`
+**File:** `agents/summarizer_agent.py:74`
 
 ---
 
-### Step 5 — Regional Summarisation (`SummarizerAgent`) — *LLM step*
+### Step 5 — Regional Summarisation (`SummarizerAgent.summarize_region`) — ⚡ *LLM + Tool Use*
 
-`SummarizerAgent` inherits from `BaseAgent` and drives a Claude Sonnet 4.6 agentic loop.
+`SummarizerAgent` inherits `BaseAgent` and drives a Claude Sonnet 4.6 **agentic tool-use loop**:
 
-**Prompt sent to Claude:**
-```
-Produce the daily digest for region '{region}' on {date}.
-Articles (N): [slimmed JSON array]
-```
+1. Sends slim articles for the region with system-prompt schema contract.
+2. Claude calls `build_regional_digest(region, article_count)` — a lightweight acknowledgment tool that signals all data has been read.
+3. `BaseAgent._dispatch_tool()` returns a `{"status": "ready"}` acknowledgment.
+4. Claude emits the structured digest JSON as its `end_turn` text response.
+5. `BaseAgent._parse_result()` strips any markdown fences and calls `json.loads()`.
 
-**Claude's behaviour:**
-1. Reads all articles
-2. Calls `build_regional_digest(region, article_count)` — a lightweight tool that returns an acknowledgment, forcing Claude to commit to a "ready" state before outputting the digest
-3. On `end_turn`, emits the digest as a raw JSON string
+The digest is **immediately written to disk** (`data/processed/DATE/region.json`) so a later crash does not lose completed work.
 
-**Output schema:**
+**Output per region:**
 ```json
 {
-  "region": "usa",
+  "region": "canada",
   "date": "2026-05-13",
-  "overview": "2–3 sentence thematic overview...",
+  "overview": "2–3 sentence thematic overview…",
   "stories": [
-    {
-      "headline": "...",
-      "source": "NPR News",
-      "url": "https://www.npr.org/...",
-      "source_home": "https://www.npr.org/sections/news/",
-      "summary": "2–4 sentence factual summary...",
-      "category": "politics"
-    }
+    { "headline": "…", "source": "CBC News", "url": "https://…", "source_home": "…",
+      "summary": "2–4 sentence factual summary…", "category": "politics" }
   ]
 }
 ```
 
 Up to **8 stories** per region, categorised as: `politics`, `economy`, `technology`, `environment`, `health`, `culture`, `sports`, or `other`.
 
-The digest is **immediately persisted** to `data/processed/{date}/{region}.json` after each region, enabling crash recovery via `--resume`.
-
-**Key file:** `agents/summarizer_agent.py:72`
+**File:** `agents/summarizer_agent.py:72`
 
 ---
 
-### Step 6 — Breaking News Article Slimming
+### Step 6 — Digest Slimming (before Breaking News call)
 
-The 229 articles from all 8 regions are merged into a single pool. For the breaking news call, an even slimmer representation is built:
+After all 25 regions are summarised, the digests are flattened into a compact detection payload:
 
 ```python
-slim = [
-    {
-        "title":  article["title"],
-        "source": article["source"],
-        "url":    article["url"],
-        "region": article["region"],
-        "blurb":  article["content"][:80],   # 80-char blurb keeps total < 10K tokens
-    }
-    for article in all_articles
+stories = [
+    {"headline": …, "source": …, "url": …, "region": …, "summary": summary[:100]}
+    for region, digest in region_summaries.items()
+    for story in digest["stories"]
 ]
+# → 25 regions × 8 stories = 200 items × ~50 tokens each ≈ 10 K tokens total
 ```
 
-The 80-character blurb cap is critical: it keeps the full 229-article payload under ~10,000 tokens, ensuring both the first API call and the follow-up (with tool results in context) stay within the 30,000 token/minute rate limit.
+**Why digests and not raw articles?**
+Raw articles (750 items × 80-char blurbs) produce a ~42 K-token payload. The first API call alone would exceed the 30 K token/minute rate limit. Digest stories are already Claude-curated, higher signal, and only ~10 K tokens total.
 
-**Key file:** `agents/breaking_news_agent.py:128`
-
----
-
-### Step 7 — Breaking News Detection (`BreakingNewsAgent`) — *LLM step*
-
-`BreakingNewsAgent` uses a **tool-accumulation pattern** rather than a final JSON blob:
-
-1. Claude reads all 229 article summaries
-2. For each breaking event found, Claude calls `report_event(...)` with the event's metadata — title, category, 3–5 sentence synthesis, per-source angles, severity
-3. Python's `_dispatch_tool` appends each event to `_collected_events`
-4. When done, Claude calls `finish_detection()` — which raises `_StopAgent`, exiting the loop **without an additional API call**
-5. `_parse_result()` returns `_collected_events` directly
-
-This design avoids the token-explosion problem of having Claude echo all 229 articles back into a `classify_articles` tool input (which caused the earlier `400` errors during development).
-
-**Key file:** `agents/breaking_news_agent.py:116`
+**File:** `agents/breaking_news_agent.py:78`
 
 ---
 
-### Step 8 — Static Site Generation (`WebGenerator`)
+### Step 7 — Breaking News Detection (`BreakingNewsAgent.detect`) — ⚡ *LLM, single call*
 
-`WebGenerator.generate()` calls three Jinja2 template renderers in sequence:
+`BreakingNewsAgent` uses a **single direct API call** (no tool-use loop) to detect, group, and synthesise breaking events across all 25 countries simultaneously:
 
-| Method | Output | Key data injected |
-|--------|--------|-------------------|
-| `_render_index()` | `web/output/index.html` | All region cards (overview + top 3 stories), breaking ticker |
-| `_render_region()` | `web/output/regions/{r}.html` | Full digest (overview + up to 8 stories with links), JS filter tabs |
-| `_render_breaking()` | `web/output/breaking.html` | Events grouped by category, source links for verification |
+1. Sends the 200-story compact payload in one `messages.create()` call.
+2. Claude scans for all 6 breaking-news categories, groups cross-country coverage of the same event, writes a 3–5 sentence unified summary, notes how different national outlets frame the story differently, and assigns severity.
+3. The response is a raw JSON array of up to **15 events** (capped to prevent `max_tokens` truncation).
+4. `detect()` strips any markdown fences and calls `json.loads()`.
 
-Static assets (CSS, JS) are copied fresh each run via `shutil.copytree`. Raw JSON for both summaries and breaking events is also saved to `web/output/data/` for external consumption.
+The result is saved to `data/processed/DATE/breaking.json`.
 
-**Key file:** `web/generator.py:36`
+**Why single-call instead of tool-use?**
+During development with 25 countries the multi-turn tool-use approach accumulated context across turns (initial 10 K tokens + tool-call history), pushing the second API call above the 30 K token/minute limit. A single call keeps the total at ~10 K tokens in and ~10 K tokens out — well within limits.
+
+**File:** `agents/breaking_news_agent.py:71`
+
+---
+
+### Step 8 — Static Site Generation (`WebGenerator.generate`)
+
+`WebGenerator` uses Jinja2 template inheritance to render all pages in a single pass:
+
+| Method | Output file | Key data |
+|--------|-------------|----------|
+| `_render_index()` | `index.html` | 25 region cards grouped by continent + breaking news ticker |
+| `_render_region()` × 25 | `regions/{country}.html` | Full digest + JS category filter tabs + grouped region switcher |
+| `_render_breaking()` | `breaking.html` | Events by category, per-source verification links |
+| `_save_json()` | `data/summaries_DATE.json` + `data/breaking_DATE.json` | Raw JSON for external consumption |
+
+`shutil.copytree` refreshes the `static/` assets on every run.
+
+**File:** `web/generator.py:36`
 
 ---
 
 ## 5. Libraries Reference
 
-### AI & Language Model Stack
+### 🤖 AI & LLM Stack
 
----
-
-#### `anthropic` ≥ 0.40.0
-**Category: Generative AI / LLM client**
-
-The official Python SDK for Anthropic's Claude API. Provides `client.messages.create()` which sends a multi-turn conversation (system prompt + messages array) to a Claude model and returns a structured response object with `content` blocks (text or tool_use) and a `stop_reason`.
-
-Key features used in this project:
-- **Tool use**: define JSON-schema tools; SDK validates tool_use blocks returned by Claude
-- **Multi-turn message history**: the SDK accepts the raw messages array, enabling the agentic loop in `BaseAgent.run()`
-- **Typed response objects**: `response.content` is a list of Pydantic-typed `ContentBlock` objects with `.type`, `.text`, `.id`, `.name`, `.input` fields
+| Library | Version | AI Technology | Role in this project |
+|---------|---------|---------------|----------------------|
+| **anthropic** | ≥ 0.40 | **GenAI · LLM · Agentic AI · Tool Use** | Official Claude API client. `client.messages.create()` drives all generative steps. Handles tool_use / tool_result message construction, typed response objects, and streaming. |
 
 ```python
-# Core usage pattern (base_agent.py)
+# Core usage — base_agent.py
 response = client.messages.create(
     model="claude-sonnet-4-6",
     max_tokens=4096,
-    system=system_prompt,
-    tools=tools,
-    messages=messages,
+    system=system_prompt,   # editorial contract
+    tools=tools,            # JSON-schema tool definitions
+    messages=messages,      # full conversation history
 )
+# stop_reason ∈ {"end_turn", "tool_use", "max_tokens"}
 ```
 
-**AI technology context:** This is the sole LLM integration point. All generative AI in the project flows through this library.
-
 ---
 
-### Web Scraping & Data Collection
+### 🌐 Web Scraping & Content Extraction
 
----
-
-#### `feedparser` ≥ 6.0.11
-**Category: Data ingestion**
-
-Parses RSS 0.9x, RSS 1.0, RSS 2.0, and Atom 1.0 feeds from a URL or string. Handles encoding detection (UTF-8, Latin-1, etc.), malformed XML, and inconsistent date formats across 24 newspaper feeds. Returns a `FeedParserDict` with a `.entries` list.
+| Library | Version | AI Technology | Role |
+|---------|---------|---------------|------|
+| **feedparser** | ≥ 6.0 | None | Parses RSS 0.9x / 2.0 and Atom 1.0 feeds. Handles encoding detection, malformed XML, and date normalisation across 75 newspaper feeds. |
+| **trafilatura** | ≥ 1.12 | *Heuristic ML* | Extracts main article body from raw HTML. Uses text-density scoring and XPath/CSS heuristics to discard ads, navigation, and boilerplate. Not a deep-learning model but a lightweight statistical content classifier. |
+| **httpx** | ≥ 0.27 | None | HTTP/1.1 + HTTP/2 client. Downloads article pages with redirect following, timeout control, and persistent connection pooling. |
 
 ```python
-# scraper_agent.py:_fetch_rss
-feed = feedparser.parse(url, request_headers={"User-Agent": "NewsAgent/1.0"})
-for entry in feed.entries[:MAX_ARTICLES_PER_SOURCE]:
-    title = entry.get("title", "")
-    link  = entry.get("link",  "")
-```
-
-No AI involvement — pure XML parsing with normalisation heuristics.
-
----
-
-#### `trafilatura` ≥ 1.12.0
-**Category: Web content extraction / NLP-adjacent**
-
-Extracts the main article body from an HTML page, discarding navigation bars, sidebars, ads, cookie banners, comment sections, and footers. Internally uses a combination of:
-- **XPath/CSS heuristics** derived from readability algorithms
-- **Statistical content scoring** — sections are scored by text density, link density, and tag patterns; the highest-scoring block is selected as the main content
-
-While not a deep-learning model, trafilatura's scoring is a lightweight ML-adjacent approach (feature engineering + threshold classification). It requires no model weights and runs entirely locally.
-
-```python
-# scraper_agent.py:_extract_content
-text = trafilatura.extract(html, include_comments=False, include_tables=False)
+# scraper_agent.py — full extraction pipeline
+feed   = feedparser.parse(rss_url, request_headers={"User-Agent": "NewsAgent/1.0"})
+html   = httpx.Client(timeout=15).get(article_url).text
+text   = trafilatura.extract(html, include_comments=False, include_tables=False)
 ```
 
 ---
 
-#### `httpx` ≥ 0.27.0
-**Category: HTTP client**
+### 🖥️ Web Generation
 
-Modern HTTP/1.1 and HTTP/2 client with connection pooling, redirect following, and configurable timeouts. Used to download article HTML pages before passing to trafilatura.
-
-```python
-# scraper_agent.py:_extract_content
-with httpx.Client(timeout=RSS_TIMEOUT, follow_redirects=True,
-                  headers={"User-Agent": "NewsAgent/1.0"}) as client:
-    resp = client.get(url)
-```
-
-Chosen over `requests` for its cleaner async-ready API and built-in HTTP/2 support.
+| Library | Version | AI Technology | Role |
+|---------|---------|---------------|------|
+| **Jinja2** | ≥ 3.1 | None | Server-side HTML templating with template inheritance (`base.html` → child pages), auto-escaping (XSS protection), and loop/conditional blocks. Renders the 27-page static site from structured JSON. |
 
 ---
 
-### Web Generation
+### ⚙️ Infrastructure
 
----
-
-#### `jinja2` ≥ 3.1.4
-**Category: HTML templating**
-
-Python's de-facto server-side templating engine. Renders HTML from `.html` template files using `{{ variable }}` substitution, `{% for %}` loops, `{% if %}` conditionals, and template inheritance (`{% extends "base.html" %}`). Auto-escaping is enabled to prevent XSS vulnerabilities in dynamically inserted content (headlines, summaries, URLs from external sources).
-
-```python
-# web/generator.py
-env  = Environment(loader=FileSystemLoader(TEMPLATES_DIR), autoescape=True)
-tmpl = env.get_template("region.html")
-html = tmpl.render(today=today, digest=digest, meta=meta, ...)
-```
-
-The template inheritance hierarchy: `base.html` → (`index.html`, `region.html`, `breaking.html`).
-
----
-
-### Infrastructure & Scheduling
-
----
-
-#### `APScheduler` ≥ 3.10.4
-**Category: Task scheduling**
-
-Advanced Python Scheduler with multiple trigger types. This project uses `BlockingScheduler` with a `CronTrigger` that fires at a configurable UTC time. `misfire_grace_time=3600` allows the job to run up to one hour late (e.g., after a system restart) without being skipped.
-
-```python
-# scheduler.py
-scheduler.add_job(
-    pipeline_fn,
-    trigger=CronTrigger(hour=SCHEDULE_HOUR, minute=SCHEDULE_MINUTE),
-    misfire_grace_time=3600,
-)
-```
-
----
-
-#### `python-dotenv` ≥ 1.0.1
-**Category: Configuration management**
-
-Loads key-value pairs from a `.env` file into `os.environ` at startup. This keeps secrets (the Anthropic API key) out of source code and version control.
-
-```python
-# config.py
-from dotenv import load_dotenv
-load_dotenv()
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
-```
-
----
-
-#### `rich` ≥ 13.9.0
-**Category: Developer experience / CLI output**
-
-Renders styled terminal output — coloured progress logs, bold region headers, panel-enclosed completion summaries. The `Console.log()` calls in each agent produce timestamped, source-location–annotated output visible during pipeline runs.
-
-```python
-# Used across agents
-console.log(f"[green]✓[/green] {region}: {len(articles)} articles fetched")
-console.print(Panel.fit("[bold cyan]Pipeline complete[/bold cyan]"))
-```
+| Library | Version | AI Technology | Role |
+|---------|---------|---------------|------|
+| **APScheduler** | ≥ 3.10 | None | `BlockingScheduler` with `CronTrigger` for daily 07:00 UTC pipeline execution. `misfire_grace_time=3600` tolerates late starts. |
+| **python-dotenv** | ≥ 1.0 | None | Loads `ANTHROPIC_API_KEY` and schedule overrides from `.env` into `os.environ` at startup. |
+| **rich** | ≥ 13.9 | None | Styled terminal output — timestamped agent logs, coloured region headers, completion panels. |
 
 ---
 
 ## 6. Architecture & Data-Flow Diagrams
 
-### 6.1 Full System Data Flow
+### 6.1 Full System — High-Level Flow
 
 ```mermaid
 flowchart TD
     A([🕐 APScheduler\nCronTrigger 07:00 UTC]) --> B
 
-    subgraph ORCH["OrchestratorAgent  ·  agents/orchestrator.py"]
-        B[run_pipeline] --> C{resume=True?\ncheck disk cache}
-        C -->|cached| D[load from\ndata/processed/DATE/]
-        C -->|not cached| E[loop: 8 regions]
-        E --> F[ScraperAgent\n.scrape_region]
-        F --> G[SummarizerAgent\n.summarize_region]
-        G --> H[(Save region.json\nto disk immediately)]
-        H --> E
-        D & H --> I[BreakingNewsAgent\n.detect]
-        I --> J[(Save breaking.json\nto disk)]
-        J --> K[WebGenerator\n.generate]
+    subgraph ORCH["OrchestratorAgent  ·  orchestrator.py"]
+        B[run_pipeline] --> C{resume?\ncheck disk}
+        C -->|cached| CACHE[(data/processed/DATE/\nregion.json × 25)]
+        C -->|fresh| LOOP[loop 25 regions]
+        LOOP --> SC[ScraperAgent\n.scrape_region]
+        SC --> SU[SummarizerAgent\n.summarize_region]
+        SU --> SAVE1[(Save region.json\nimmediately)]
+        SAVE1 --> LOOP
+        CACHE --> BN
+        SAVE1 --> BN
+        BN[BreakingNewsAgent\n.detect]
+        BN --> SAVE2[(Save breaking.json)]
+        SAVE2 --> WG[WebGenerator\n.generate]
     end
 
-    subgraph SCRAPER["ScraperAgent  ·  agents/scraper_agent.py"]
-        F --> L[_fetch_rss\nfeedparser.parse]
-        L --> M[_extract_content\nhttpx + trafilatura\ntop-5 articles]
-        M --> N[list of Article dicts\ntitle · url · source · content]
+    subgraph SCRAPER["ScraperAgent — Python only"]
+        SC --> F1[feedparser.parse\n× 3 sources]
+        F1 --> F2[httpx.get + trafilatura\ntop-5 articles/source]
+        F2 --> F3[list of Article dicts]
     end
 
-    subgraph SUMM["SummarizerAgent  ·  agents/summarizer_agent.py  ·  Claude Sonnet 4.6"]
-        G --> O[slim articles\n2 000-char content cap]
-        O --> P[anthropic.messages.create\nsystem + tools + messages]
-        P --> Q{stop_reason?}
-        Q -->|tool_use: build_regional_digest| R[_dispatch_tool\nreturn acknowledgment]
-        R --> P
-        Q -->|end_turn| S[_parse_result\njson.loads final text]
-        S --> T[Digest dict\noverview + 8 stories]
+    subgraph SUMM["SummarizerAgent — Claude Sonnet 4.6 · Tool-Use Loop"]
+        SU --> G1[slim articles\ncontent truncated 2 000 chars]
+        G1 --> G2[messages.create\nsystem+tools+messages]
+        G2 -->|tool_use: build_regional_digest| G3[_dispatch_tool\nreturn acknowledgment]
+        G3 --> G2
+        G2 -->|end_turn| G4[_parse_result\nstrip fences · json.loads]
+        G4 --> G5[Digest dict\noverview + 8 stories]
     end
 
-    subgraph BREAK["BreakingNewsAgent  ·  agents/breaking_news_agent.py  ·  Claude Sonnet 4.6"]
-        I --> U[slim 229 articles\n80-char blurb]
-        U --> V[anthropic.messages.create\nreport_event + finish_detection tools]
-        V --> W{tool_use?}
-        W -->|report_event × N| X[_dispatch_tool\nappend to _collected_events]
-        X --> V
-        W -->|finish_detection| Y[raise _StopAgent\nearly exit — no extra API call]
-        Y --> Z[return _collected_events\nlist of Breaking Event dicts]
+    subgraph BREAK["BreakingNewsAgent — Claude Sonnet 4.6 · Single Call"]
+        BN --> H1[flatten 200 digest stories\n100-char summary each]
+        H1 --> H2[messages.create\nsingle call · 16 000 max_tokens]
+        H2 --> H3[strip markdown fences\njson.loads]
+        H3 --> H4[list of Breaking Events\nmax 15]
     end
 
-    subgraph WEB["WebGenerator  ·  web/generator.py  ·  Jinja2"]
-        K --> AA[_render_index\nindex.html\nregion cards + ticker]
-        K --> AB[_render_region × 8\nregions/usa.html … italy.html\nstory grid + filter JS]
-        K --> AC[_render_breaking\nbreaking.html\ncross-source detail cards]
-        K --> AD[_save_json\nweb/output/data/]
+    subgraph WEB["WebGenerator — Jinja2"]
+        WG --> W1[_render_index\nindex.html]
+        WG --> W2[_render_region × 25\nregions/*.html]
+        WG --> W3[_render_breaking\nbreaking.html]
+        WG --> W4[_save_json\ndata/*.json]
     end
 
-    AA & AB & AC --> AE[(web/output/\nStatic Site\n15 HTML files)]
-    AE --> AF[🌐 Browser\nlocalhost:8080\nor GitHub Pages]
+    W1 & W2 & W3 & W4 --> OUT[(web/output/\n27 HTML pages\n+ JSON data)]
+    OUT --> LIVE[🌐 GitHub Pages\nfborbon.github.io/news_agent]
 ```
 
 ---
 
-### 6.2 BaseAgent Agentic Loop — Detailed
+### 6.2 BaseAgent Agentic Loop (used by SummarizerAgent)
 
 ```mermaid
 flowchart LR
-    A([user_message]) --> B[messages =\nuser message]
-    B --> C[anthropic\n.messages.create\nmodel · system · tools · messages]
-    C --> D{stop_reason}
+    A([user_message]) --> B[messages =\n'user' turn]
 
-    D -->|end_turn| E[extract text\nfrom content blocks]
-    E --> F[_parse_result\njson.loads or raw text]
-    F --> G([return result])
+    B --> C[_create_with_retry\nmessages.create\nmodel·system·tools·messages]
 
-    D -->|tool_use| H[_blocks_to_dicts\nPydantic → plain dict\npreserves exact IDs]
-    H --> I[append assistant\nmessage to history]
-    I --> J[loop over\ncontent blocks]
-    J --> K{block.type\n== tool_use?}
-    K -->|no| J
-    K -->|yes| L[_dispatch_tool\nblock.name · block.input]
-    L --> M{raises\n_StopAgent?}
-    M -->|yes| N[append tool_result\nstatus=stopped]
-    N --> O[early return\n_parse_result of '']
-    M -->|no| P[append tool_result\njson.dumps result]
-    P --> J
-    J -->|done| Q[append user message\nwith all tool_results]
-    Q --> C
+    C -->|RateLimitError| R[sleep 60→120→240→300s\nretry up to 4×]
+    R --> C
+
+    C --> D{stop_reason?}
+
+    D -->|end_turn| E[extract text block\n_parse_result\nstrip fences · json.loads]
+    E --> Z([return result])
+
+    D -->|tool_use| F[_blocks_to_dicts\nPydantic → plain dict\npreserves exact IDs]
+    F --> G[append assistant turn\nto messages history]
+    G --> H[for each tool_use block]
+    H --> I[_dispatch_tool\nblock.name · block.input]
+    I -->|raises _StopAgent| J[append tool_result\nstatus=stopped · early return]
+    J --> Z
+    I -->|normal| K[append tool_result\njson.dumps result]
+    K --> H
+    H -->|all done| L[append user turn\nwith all tool_results]
+    L --> C
 ```
 
 ---
 
-### 6.3 Function-Level Data Flow
+### 6.3 Function-Level Data Flow — Full Pipeline
 
 ```mermaid
 flowchart TD
-    subgraph INPUT["Input Layer"]
-        N1["🇺🇸 NYT RSS\n🇺🇸 WashPost RSS\n🇺🇸 NPR RSS"]
-        N2["🇬🇧 BBC RSS\n… (×21 more feeds)"]
+    subgraph IN["Input — 75 RSS Feeds"]
+        R1["🇺🇸 NYT · WashPost · NPR"]
+        R2["🇬🇧 BBC · Guardian · Sky"]
+        R3["🇫🇷 LeMonde · LeFigaro · France24"]
+        RN["… 22 more country groups …"]
     end
 
     subgraph SCRAPE["scraper_agent.py"]
-        F1["_fetch_rss(source)\nfeedparser.parse(url)\n→ list[dict] up to 10 items"]
-        F2["_extract_content(url)\nhttpx.Client.get(url)\ntrafilatura.extract(html)\n→ str, max 4 000 chars"]
-        F3["scrape_region(region)\n→ list of Article dicts"]
-        N1 & N2 --> F1 --> F2 --> F3
+        S1["_fetch_rss(source)\nfeedparser.parse(url)\n→ up to 10 entries/source"]
+        S2["_extract_content(url)\nhttpx.get → trafilatura.extract\n→ str ≤ 4 000 chars\nfallback: RSS summary"]
+        S3["scrape_region(region)\n→ list[Article]\ntitle · url · source · content"]
+        R1 & R2 & R3 & RN --> S1 --> S2 --> S3
     end
 
-    subgraph PREP["Slimming (in-memory)"]
-        S1["SummarizerAgent:\ncontent[:2 000]\n→ ~15K tokens per region"]
-        S2["BreakingNewsAgent:\nblurb[:80]\n→ ~8K tokens for 229 articles"]
-        F3 --> S1
-        F3 --> S2
+    subgraph SLIM1["Article slimming — summarizer_agent.py:74"]
+        T1["content[:2 000]\n~15 K tokens per region"]
+        S3 --> T1
     end
 
     subgraph SUMM["summarizer_agent.py — Claude Sonnet 4.6"]
-        G1["summarize_region(region, articles, date)\nbuild prompt string"]
-        G2["BaseAgent.run(prompt)\nClaude API call #1"]
-        G3["tool: build_regional_digest\n_dispatch_tool → acknowledgment"]
-        G4["Claude API call #2\nstop_reason=end_turn"]
-        G5["json.loads(text)\n→ Digest dict\n{overview, stories[8]}"]
-        S1 --> G1 --> G2 --> G3 --> G4 --> G5
+        U1["summarize_region(region, articles, date)\nbuild prompt string"]
+        U2["BaseAgent.run(prompt)\nCall #1 → tool_use: build_regional_digest\nCall #2 → end_turn: JSON digest"]
+        U3["Digest dict saved to disk\noverview + 8 stories with URLs"]
+        T1 --> U1 --> U2 --> U3
+    end
+
+    subgraph SLIM2["Digest slimming — breaking_news_agent.py:78"]
+        V1["25 regions × 8 stories\n= 200 items × ~50 tokens\n≈ 10 K tokens total"]
+        U3 --> V1
     end
 
     subgraph BREAK["breaking_news_agent.py — Claude Sonnet 4.6"]
-        B1["detect(all_articles, date)\nbuild slim prompt"]
-        B2["BaseAgent.run(prompt)\nClaude API call #1\n~8K input tokens"]
-        B3["tool: report_event × N\n_dispatch_tool → append to list"]
-        B4["tool: finish_detection\nraise _StopAgent → exit loop"]
-        B5["return _collected_events\nlist of Breaking Event dicts"]
-        S2 --> B1 --> B2 --> B3 --> B4 --> B5
-    end
-
-    subgraph PERSIST["Persistence (disk)"]
-        P1["data/processed/DATE/\nregion.json (per region)\nregion_raw.json (per region)"]
-        P2["data/processed/DATE/\nbreaking.json"]
-        G5 --> P1
-        B5 --> P2
+        W1["detect(region_summaries, date)\nbuild 200-story prompt"]
+        W2["client.messages.create\nsingle call · 16 000 max_tokens\nno tool-use loop"]
+        W3["strip markdown fences\njson.loads → list[BreakingEvent]\nmax 15 events"]
+        V1 --> W1 --> W2 --> W3
     end
 
     subgraph GEN["web/generator.py — Jinja2"]
-        W1["_render_index\nindex.html\nregion cards + breaking ticker"]
-        W2["_render_region × 8\nregions/*.html\nstory cards + filter tabs"]
-        W3["_render_breaking\nbreaking.html\ncross-source detail view"]
-        W4["_save_json\nweb/output/data/\nsummaries_DATE.json\nbreaking_DATE.json"]
-        G5 --> W1 & W2
-        B5 --> W1 & W3
-        G5 & B5 --> W4
+        X1["_render_index\nindex.html\nregion cards by continent + ticker"]
+        X2["_render_region × 25\nregions/*.html\nstory grid + JS filter tabs"]
+        X3["_render_breaking\nbreaking.html\ncross-source detail + verify links"]
+        X4["_save_json\nweb/output/data/\n*.json"]
+        U3 --> X1 & X2
+        W3 --> X1 & X3
+        U3 & W3 --> X4
     end
 
-    subgraph OUT["Output Layer"]
-        O1["🌐 index.html\nOverview + Ticker"]
-        O2["🌐 regions/usa.html … italy.html\n64 stories · 64 clickable source links"]
-        O3["🌐 breaking.html\n8 events · 39 source links"]
-        W1 --> O1
-        W2 --> O2
-        W3 --> O3
+    subgraph OUT["Output — Static Site"]
+        Y1["🌐 index.html\n25 region cards grouped by continent"]
+        Y2["🌐 regions/usa.html … egypt.html\n200 stories · 200 clickable source links"]
+        Y3["🌐 breaking.html\n≤15 events · per-source verify links"]
+        X1 --> Y1
+        X2 --> Y2
+        X3 --> Y3
     end
 ```
 
 ---
 
-### 6.4 Token Budget per API Call
+### 6.4 Token Budget — Why Every Payload Size Was Chosen
 
 ```mermaid
 xychart-beta
-    title "Estimated input tokens per Claude API call"
-    x-axis ["SummarizerAgent\n(per region)", "BreakingNewsAgent\n(1st call)", "BreakingNewsAgent\n(2nd call — tool results)"]
-    y-axis "Tokens" 0 --> 30000
-    bar [15000, 10000, 14000]
+    title "Input tokens per Claude API call  (rate limit: 30 000 / min)"
+    x-axis ["Summariser\n(per region)", "Breaking News\n(single call)", "Breaking News\n(old multi-turn\ncall 2 — retired)"]
+    y-axis "Tokens" 0 --> 50000
+    bar  [15000, 10000, 42000]
     line [30000, 30000, 30000]
 ```
 
-> The red line marks the 30,000 token/minute API rate limit. All calls are engineered to stay below it.
+> The retired multi-turn approach sent 750 raw articles (42 K tokens) and accumulated tool-call history on the second turn, consistently exceeding the 30 K/min limit. The current single-call approach sends 200 digest stories (~10 K tokens) in one shot.
 
 ---
 
 ## 7. Breaking News Detection
 
-The `BreakingNewsAgent` monitors for six high-impact event categories:
+`BreakingNewsAgent` monitors six high-impact event categories across all 25 country feeds simultaneously:
 
-| Icon | Category key | Trigger criteria |
-|------|-------------|-----------------|
-| ⚔️ | `war_conflict` | Active military operations, new armed conflicts, major escalations |
-| 📉 | `financial_collapse` | Stock-market crashes (>5%), sovereign debt defaults, bank failures |
-| 🏦 | `corporate_crisis` | Fortune-500 bankruptcies, major fraud, accounting scandals |
-| 🚨 | `transportation_accident` | Aviation disasters, rail or maritime accidents with mass casualties |
-| 🚔 | `law_enforcement_operation` | Counter-terrorism operations, large-scale raids, ICC arrests |
-| 🌪️ | `natural_disaster` | Earthquakes (M5.5+), hurricanes, tsunamis, wildfires, catastrophic floods |
+| Icon | Category key | Trigger criteria | Example |
+|------|-------------|-----------------|---------|
+| ⚔️ | `war_conflict` | Active military operations, new conflicts, major escalations | US-Iran War, Russia-Ukraine drone strikes |
+| 📉 | `financial_collapse` | Market crashes (>5%), sovereign debt defaults, bank failures | Energy crisis from Hormuz blockade |
+| 🏦 | `corporate_crisis` | Fortune-500 bankruptcies, major fraud or accounting scandals | ASML chip export restrictions |
+| 🚨 | `transportation_accident` | Aviation, maritime or rail disasters with mass casualties | Japan expressway bus crash |
+| 🚔 | `law_enforcement_operation` | Counter-terrorism ops, ICC arrests, large-scale raids | Philippine Senate ICC arrest |
+| 🌪️ | `natural_disaster` | Earthquakes M5.5+, hurricanes, tsunamis, wildfires, floods | Hantavirus outbreak, Cape Town floods |
 
-**Cross-source synthesis**: for each event, Claude identifies which articles from *different* outlets and *different* countries cover the same story, noting how national perspectives frame it differently. This cross-source analysis is stored in the `analysis` field of each breaking event.
+**Cross-source synthesis:** For each event, Claude identifies which stories from *different* outlets and *different* countries cover the same event, and notes how national framing differs — e.g. how US sources vs. Iranian sources describe the same military action. This is stored in the `analysis` field.
 
-**Severity assignment** (Claude's judgement, guided by system prompt):
-- `critical` — imminent mass-casualty risk, active military conflict, nuclear escalation
-- `high` — significant casualties confirmed, major economic disruption, mass public health threat  
+**Severity assignment** (Claude's editorial judgement, guided by system prompt):
+- `critical` — imminent mass-casualty risk, active armed conflict, nuclear escalation
+- `high` — confirmed casualties or significant economic disruption, major public health threat
 - `moderate` — contained but noteworthy events, early-stage developing stories
 
 ---
@@ -690,44 +587,38 @@ The `BreakingNewsAgent` monitors for six high-impact event categories:
 News_agent/
 │
 ├── agents/
-│   ├── base_agent.py          # BaseAgent: agentic tool-use loop + _blocks_to_dicts
-│   ├── orchestrator.py        # OrchestratorAgent: direct Python pipeline coordinator
-│   ├── scraper_agent.py       # ScraperAgent: feedparser + httpx + trafilatura
-│   ├── summarizer_agent.py    # SummarizerAgent: Claude Sonnet 4.6, digest output
-│   └── breaking_news_agent.py # BreakingNewsAgent: Claude Sonnet 4.6, event detection
+│   ├── base_agent.py           # Agentic loop + retry + fence-strip JSON parsing
+│   ├── orchestrator.py         # Pipeline coordinator: 25-region loop, crash recovery
+│   ├── scraper_agent.py        # RSS ingestion (feedparser) + extraction (trafilatura)
+│   ├── summarizer_agent.py     # Claude Sonnet 4.6 · tool-use loop · per-region digest
+│   └── breaking_news_agent.py  # Claude Sonnet 4.6 · single call · global event detection
 │
 ├── sources/
-│   └── news_sources.py        # 24 RSS feed URLs across 8 regions
+│   └── news_sources.py         # 75 verified RSS feeds across 25 countries
 │
 ├── web/
-│   ├── generator.py           # WebGenerator: Jinja2 static site builder
+│   ├── generator.py            # Jinja2 static site builder (27 pages)
 │   ├── templates/
-│   │   ├── base.html          # Shared layout (header, nav, footer)
-│   │   ├── index.html         # Home page: region grid + breaking ticker
-│   │   ├── region.html        # Country page: story grid + JS category filter
-│   │   └── breaking.html      # Breaking events: sidebar nav + source links
+│   │   ├── base.html           # Shared layout: 25-flag nav, mobile toggle, footer
+│   │   ├── index.html          # Home: continent-grouped region cards + breaking ticker
+│   │   ├── region.html         # Country digest: story grid + JS category filter
+│   │   └── breaking.html       # Breaking events: sidebar nav + source verify links
 │   └── static/
-│       ├── css/style.css      # Dark news-site theme (no external frameworks)
-│       └── js/main.js         # Filter tabs + ticker loop
+│       ├── css/style.css       # Dark news-site theme (no external CSS frameworks)
+│       └── js/main.js          # Mobile nav toggle + category filter + ticker loop
 │
 ├── data/
-│   ├── raw/                   # (reserved for future use)
 │   └── processed/
 │       └── YYYY-MM-DD/
-│           ├── {region}.json      # Structured digest per region
-│           ├── {region}_raw.json  # Raw scraped articles (for resume/debug)
-│           └── breaking.json      # Detected breaking events
+│           ├── {region}.json       # Digest per country (persisted immediately)
+│           ├── {region}_raw.json   # Raw scraped articles (for --resume / debug)
+│           └── breaking.json       # Detected breaking events
 │
-├── web/output/                # ← Generated site (gitignore or deploy)
-│   ├── index.html
-│   ├── breaking.html
-│   ├── regions/
-│   ├── static/
-│   └── data/                  # JSON copies for external consumption
+├── docs/                       # GitHub Pages deployment (copy of web/output/)
 │
-├── config.py                  # All constants and model names
-├── main.py                    # CLI: --now · --resume · --demo
-├── scheduler.py               # APScheduler daily cron
+├── config.py                   # All constants, model names, region metadata
+├── main.py                     # CLI: --now · --resume · --demo
+├── scheduler.py                # APScheduler daily cron
 ├── requirements.txt
 └── .env.example
 ```
@@ -739,26 +630,27 @@ News_agent/
 ### Install
 
 ```bash
-git clone <your-repo-url> && cd News_agent
+git clone https://github.com/fborbon/news_agent.git
+cd news_agent
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env          # then add your ANTHROPIC_API_KEY
+cp .env.example .env          # add your ANTHROPIC_API_KEY
 ```
 
 ### Run
 
 ```bash
-# Preview with mock data — no API key required
+# Preview with mock data — no API key needed
 python main.py --demo
 
 # Full live pipeline, run once and exit
 python main.py --now
 
-# Resume after a crash — reuse today's cached region data,
+# Resume after a crash — reuse today's cached region digests,
 # only re-run the steps that didn't complete
 python main.py --resume
 
-# Run once immediately, then start the daily scheduler
+# Run once immediately, then start the daily 07:00 UTC scheduler
 python main.py
 ```
 
@@ -769,12 +661,14 @@ python -m http.server 8080 --directory web/output
 # → http://localhost:8080
 ```
 
-### Deploy (GitHub Pages)
+### Deploy to GitHub Pages
 
 ```bash
 cp -r web/output/* docs/
-git add docs/ && git commit -m "news digest $(date +%Y-%m-%d)"
+git add docs/
+git commit -m "update news digest $(date +%Y-%m-%d)"
 git push
+# → https://<your-username>.github.io/news_agent/
 ```
 
 ---
@@ -786,12 +680,12 @@ All settings live in `config.py` and can be overridden via `.env`:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `ANTHROPIC_API_KEY` | — | **Required.** Your Anthropic API key |
-| `SUMMARIZER_MODEL` | `claude-sonnet-4-6` | Claude model for regional digests |
-| `BREAKING_MODEL` | `claude-sonnet-4-6` | Claude model for breaking news detection |
-| `SCRAPER_MODEL` | `claude-haiku-4-5-20251001` | Reserved — Haiku for future LLM-assisted scraping tasks |
-| `SCHEDULE_HOUR` | `7` | UTC hour for daily pipeline run |
-| `SCHEDULE_MINUTE` | `0` | UTC minute for daily pipeline run |
+| `SUMMARIZER_MODEL` | `claude-sonnet-4-6` | Claude model for regional digests (tool-use loop) |
+| `BREAKING_MODEL` | `claude-sonnet-4-6` | Claude model for breaking news (single call) |
+| `SCRAPER_MODEL` | `claude-haiku-4-5-20251001` | Reserved for future LLM-assisted scraping enrichment |
+| `SCHEDULE_HOUR` | `7` | UTC hour for daily pipeline trigger |
+| `SCHEDULE_MINUTE` | `0` | UTC minute for daily pipeline trigger |
 | `MAX_ARTICLES_PER_SOURCE` | `10` | Max RSS entries fetched per source |
 | `FULL_CONTENT_LIMIT` | `5` | Articles per source that get full trafilatura extraction |
-| `MAX_ARTICLE_CHARS` | `4000` | Character cap on extracted article text |
+| `MAX_ARTICLE_CHARS` | `4 000` | Character cap on extracted article text |
 | `RSS_TIMEOUT` | `15` | HTTP timeout for article downloads (seconds) |
