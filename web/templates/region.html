@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}{{ meta.flag }} {{ meta.label }} — News Digest · {{ today }}{% endblock %}
+
+{% block content %}
+
+<div class="region-hero">
+  <span class="region-hero-flag">{{ meta.flag }}</span>
+  <div>
+    <h1>{{ meta.label }}</h1>
+    <p class="hero-date">Daily Digest — {{ today }}</p>
+    <p class="hero-sub">{{ meta.lang }} sources &middot; {{ meta.group }}</p>
+  </div>
+</div>
+
+{% if digest.overview %}
+<section class="overview-box">
+  <h2>Today's Overview</h2>
+  <p>{{ digest.overview }}</p>
+</section>
+{% endif %}
+
+<!-- ── Category filter tabs ─────────────────────────────────────── -->
+<div class="filter-bar" id="filter-bar">
+  <button class="filter-btn active" data-cat="all">All stories</button>
+  {% set cats = digest.stories | map(attribute='category') | unique | list %}
+  {% for cat in cats %}
+  <button class="filter-btn" data-cat="{{ cat }}">{{ cat | capitalize }}</button>
+  {% endfor %}
+</div>
+
+<!-- ── Stories ───────────────────────────────────────────────────── -->
+<section class="stories-grid" id="stories-grid">
+  {% for story in digest.stories %}
+  <article class="story-card" data-cat="{{ story.category }}">
+    <div class="story-meta">
+      <span class="cat-badge cat-{{ story.category }}">{{ story.category }}</span>
+      {% if story.source_home %}
+      <a href="{{ story.source_home }}" target="_blank" rel="noopener" class="story-source-link">{{ story.source }}</a>
+      {% else %}
+      <span class="story-source">{{ story.source }}</span>
+      {% endif %}
+    </div>
+    <h3 class="story-headline">{{ story.headline }}</h3>
+    <p class="story-summary">{{ story.summary }}</p>
+    {% if story.url %}
+    <a href="{{ story.url }}" target="_blank" rel="noopener" class="story-link btn-verify">
+      📰 Read original →
+    </a>
+    {% endif %}
+  </article>
+  {% else %}
+  <p class="empty-state">No stories available for this region today.</p>
+  {% endfor %}
+</section>
+
+<!-- ── Region switcher grouped by continent ──────────────────────── -->
+{% set groups = [
+  ("Americas",     ["canada","mexico","brazil","usa"]),
+  ("Europe",       ["uk","france","germany","spain","italy","russia","ukraine","turkey"]),
+  ("Asia-Pacific", ["japan","china","india","australia","taiwan","singapore","south_korea"]),
+  ("Middle East",  ["saudi_arabia","iran","uae"]),
+  ("Africa",       ["south_africa","morocco","egypt"]),
+] %}
+<nav class="region-switcher">
+  {% for group_label, group_keys in groups %}
+  <span class="switcher-group">
+    <span class="switcher-label">{{ group_label }}:</span>
+    {% for r in group_keys %}
+    {% if r != region and r in region_meta %}
+    <a href="{{ root }}regions/{{ r }}.html" class="region-pill">
+      {{ region_meta[r].flag }} {{ region_meta[r].label }}
+    </a>
+    {% endif %}
+    {% endfor %}
+  </span>
+  {% endfor %}
+</nav>
+
+{% endblock %}

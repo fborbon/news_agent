@@ -1,0 +1,25 @@
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.venv/
+venv/
+*.egg-info/
+
+# Raw scraped data (large, regenerated daily)
+data/processed/*/
+data/raw/
+
+# Generated site output (deploy separately or via CI)
+web/output/
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp

@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}⚡ Breaking News — Global Intelligence · {{ today }}{% endblock %}
+
+{% block content %}
+
+<section class="page-hero breaking-hero">
+  <h1>⚡ Breaking News</h1>
+  <p class="hero-date">{{ today }}</p>
+  <p class="hero-sub">
+    {{ events | length }} high-impact event{{ 's' if events | length != 1 }}
+    detected across 8 country feeds
+  </p>
+</section>
+
+<div class="breaking-layout">
+
+  <!-- Sidebar nav -->
+  <aside class="breaking-sidebar">
+    <h3>Event Categories</h3>
+    <ul class="cat-nav">
+      <li>
+        <a href="#all" class="cat-nav-link active" data-cat="all">
+          All events <span class="count">{{ events | length }}</span>
+        </a>
+      </li>
+      {% for key, cat in breaking_categories.items() %}
+      {% set count = grouped[key] | length %}
+      {% if count > 0 %}
+      <li>
+        <a href="#{{ key }}" class="cat-nav-link" data-cat="{{ key }}">
+          {{ cat.icon }} {{ cat.label }}
+          <span class="count">{{ count }}</span>
+        </a>
+      </li>
+      {% endif %}
+      {% endfor %}
+    </ul>
+
+    <div class="sidebar-note">
+      <strong>About this section</strong>
+      <p>Breaking events are detected by the BreakingNewsAgent, which scans all
+         articles across 8 country feeds and cross-synthesises how different
+         outlets frame the same story. Click any source link to verify.</p>
+    </div>
+  </aside>
+
+  <!-- Events feed -->
+  <div class="breaking-feed" id="breaking-feed">
+
+    {% if not events %}
+    <div class="empty-state-full">
+      <p>🌐 No breaking events detected today — the world seems calm.</p>
+    </div>
+    {% endif %}
+
+    {% for key, cat in breaking_categories.items() %}
+    {% if grouped[key] %}
+    <section class="cat-section" id="{{ key }}" data-cat="{{ key }}">
+      <h2 class="cat-section-title" style="border-color: {{ cat.color }};">
+        <span>{{ cat.icon }}</span> {{ cat.label }}
+      </h2>
+
+      {% for ev in grouped[key] %}
+      <article class="breaking-detail-card severity-{{ ev.severity }}" id="{{ ev.id }}">
+
+        <div class="detail-header">
+          <span class="severity-badge-large severity-{{ ev.severity }}">
+            {% if ev.severity == 'critical' %}🔴{% elif ev.severity == 'high' %}🟠{% else %}🟡{% endif %}
+            {{ ev.severity | upper }}
+          </span>
+          <h3>{{ ev.title }}</h3>
+        </div>
+
+        <div class="detail-body">
+          <div class="detail-summary-col">
+            <h4>Unified Summary</h4>
+            <p>{{ ev.summary }}</p>
+
+            {% if ev.analysis %}
+            <h4>Source Perspectives</h4>
+            <p class="analysis-text">{{ ev.analysis }}</p>
+            {% endif %}
+          </div>
+
+          <div class="detail-sources-col">
+            <h4>Verify with original sources</h4>
+            <ul class="source-list">
+              {% for src in ev.sources %}
+              <li>
+                {% if src.url %}
+                <a href="{{ src.url }}" target="_blank" rel="noopener" class="verify-link">
+                  🔗 {{ src.name }}
+                </a>
+                {% else %}
+                <span>{{ src.name }}</span>
+                {% endif %}
+                {% if src.angle %}
+                <span class="source-angle">— {{ src.angle }}</span>
+                {% endif %}
+              </li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+
+      </article>
+      {% endfor %}
+    </section>
+    {% endif %}
+    {% endfor %}
+
+  </div><!-- /.breaking-feed -->
+</div><!-- /.breaking-layout -->
+
+{% endblock %}

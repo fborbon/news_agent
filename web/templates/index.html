@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Global News Intelligence — Daily Digest · {{ today }}{% endblock %}
+
+{% block content %}
+
+<!-- ── Breaking news ticker ──────────────────────────────────────── -->
+{% if breaking_events %}
+<div class="breaking-banner">
+  <span class="banner-label">⚡ BREAKING</span>
+  <div class="ticker-wrap">
+    <div class="ticker">
+      {% for ev in breaking_events %}
+      <span class="ticker-item">
+        <a href="{{ root }}breaking.html#{{ ev.id }}">
+          {{ breaking_categories[ev.category].icon }} {{ ev.title }}
+        </a>
+      </span>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- ── Hero ──────────────────────────────────────────────────────── -->
+<section class="page-hero">
+  <h1>Today's Global News Digest</h1>
+  <p class="hero-date">{{ today }}</p>
+  <p class="hero-sub">{{ region_cards | length }} countries &middot; 75 sources &middot; AI-summarised</p>
+  {% if critical_count > 0 %}
+  <a href="{{ root }}breaking.html" class="btn btn-alert">
+    ⚡ {{ critical_count }} Critical Breaking Event{{ 's' if critical_count != 1 }}
+  </a>
+  {% endif %}
+</section>
+
+<!-- ── Region groups ─────────────────────────────────────────────── -->
+{% set groups = [
+  ("🌎 Americas",      ["canada","mexico","brazil","usa"]),
+  ("🌍 Europe",        ["uk","france","germany","spain","italy","russia","ukraine","turkey"]),
+  ("🌏 Asia-Pacific",  ["japan","china","india","australia","taiwan","singapore","south_korea"]),
+  ("🕌 Middle East",   ["saudi_arabia","iran","uae"]),
+  ("🌍 Africa",        ["south_africa","morocco","egypt"]),
+] %}
+
+{% set card_map = {} %}
+{% for card in region_cards %}{% if card_map.update({card.key: card}) %}{% endif %}{% endfor %}
+
+{% for group_label, group_keys in groups %}
+{% set group_cards = [] %}
+{% for k in group_keys %}{% if k in card_map %}{% if group_cards.append(card_map[k]) %}{% endif %}{% endif %}{% endfor %}
+{% if group_cards %}
+<section class="section">
+  <h2 class="section-title">{{ group_label }}</h2>
+  <div class="region-grid">
+    {% for card in group_cards %}
+    <article class="region-card">
+      <div class="card-header">
+        <span class="card-flag">{{ card.flag }}</span>
+        <span class="card-label">{{ card.label }}</span>
+      </div>
+      <p class="card-overview">{{ card.overview }}</p>
+      {% if card.stories %}
+      <ul class="card-headlines">
+        {% for story in card.stories %}
+        <li>
+          <span class="cat-badge cat-{{ story.category }}">{{ story.category }}</span>
+          {% if story.url %}
+          <a href="{{ story.url }}" target="_blank" rel="noopener" class="headline-link">{{ story.headline }}</a>
+          {% else %}
+          {{ story.headline }}
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+      <a href="{{ root }}regions/{{ card.key }}.html" class="card-cta">Full digest →</a>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+{% endfor %}
+
+<!-- ── Breaking news section ─────────────────────────────────────── -->
+{% if breaking_events %}
+<section class="section">
+  <h2 class="section-title">⚡ Breaking News</h2>
+  <div class="breaking-list">
+    {% for ev in breaking_events %}
+    <article class="breaking-card severity-{{ ev.severity }}" id="{{ ev.id }}">
+      <div class="breaking-card-header">
+        <span class="breaking-icon">{{ breaking_categories[ev.category].icon }}</span>
+        <span class="breaking-cat-label">{{ breaking_categories[ev.category].label }}</span>
+        <span class="severity-badge">{{ ev.severity | upper }}</span>
+      </div>
+      <h3 class="breaking-title">{{ ev.title }}</h3>
+      <p class="breaking-summary">{{ ev.summary }}</p>
+      <div class="breaking-sources">
+        <span class="sources-label">Sources:</span>
+        {% for src in ev.sources[:5] %}
+        {% if src.url %}
+        <a href="{{ src.url }}" target="_blank" rel="noopener" class="source-chip">{{ src.name }}</a>
+        {% else %}
+        <span class="source-chip">{{ src.name }}</span>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  <a href="{{ root }}breaking.html" class="btn btn-outline">View all breaking events →</a>
+</section>
+{% endif %}
+
+{% endblock %}
