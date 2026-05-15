@@ -63,6 +63,11 @@ NEWS_SOURCES: dict[str, list[dict]] = {
         {"name": "G1 (Globo)",            "rss": "https://g1.globo.com/rss/g1/",                                                           "home": "https://g1.globo.com",                     "country": "Brazil"},
         {"name": "Agência Brasil",        "rss": "https://agenciabrasil.ebc.com.br/rss/ultimasnoticias/feed.xml",                          "home": "https://agenciabrasil.ebc.com.br",         "country": "Brazil"},
     ],
+    "costa_rica": [
+        {"name": "The Tico Times",        "rss": "https://ticotimes.net/feed",                                                             "home": "https://ticotimes.net",                    "country": "Costa Rica"},
+        {"name": "CRHoy",                 "rss": "https://www.crhoy.com/feed/",                                                            "home": "https://www.crhoy.com",                    "country": "Costa Rica"},
+        {"name": "La Nación CR",          "rss": "https://www.nacion.com/arc/outboundfeeds/rss/",                                          "home": "https://www.nacion.com",                   "country": "Costa Rica"},
+    ],
 
     # ── Asia-Pacific ──────────────────────────────────────────────────────────
 

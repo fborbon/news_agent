@@ -1,8 +1,8 @@
 # 🌍 Global News Intelligence Agent
 
-**🔴 Live site → [https://fborbon.github.io/news_agent/](https://fborbon.github.io/news_agent/)**
+**🔴 Live site → [https://www.forwardforecasting.eu/newssummary/](https://www.forwardforecasting.eu/newssummary/)**
 
-> A multi-agent AI system that scrapes, summarises, and analyses the world's top newspapers every day — covering **25 countries · 75 RSS sources** — and publishing a fully static news website powered by Claude.
+> A multi-agent AI system that scrapes, summarises, and analyses the world's top newspapers every day — covering **26 countries · 78 RSS sources** — and publishing a fully static news website powered by Claude.
 
 ![Python](https://img.shields.io/badge/Python-3.11+-3776ab?logo=python&logoColor=white)
 ![Claude](https://img.shields.io/badge/Claude-Sonnet%204.6-7c3aed?logo=anthropic&logoColor=white)
@@ -34,17 +34,18 @@ This portfolio project demonstrates a **production-grade agentic AI pipeline** b
 
 | Step | Agent / Component | Output |
 |------|-------------------|--------|
-| **Scrape** | `ScraperAgent` | Up to 300 raw articles (30/country) |
+| **Scrape** | `ScraperAgent` | Up to 312 raw articles (30/country) |
 | **Extract** | `ScraperAgent` | Full article text via trafilatura |
 | **Summarise** | `SummarizerAgent` + Claude | 8 curated stories per country with source links |
 | **Detect** | `BreakingNewsAgent` + Claude | Up to 15 cross-source breaking events |
-| **Publish** | `WebGenerator` + Jinja2 | 27 static HTML pages |
+| **Publish** | `WebGenerator` + Jinja2 | 28 static HTML pages + dated archives |
+| **Deploy** | `rsync` → EC2 | Auto-pushes to forwardforecasting.eu/newssummary/ |
 
 ### Monitored countries — 3 sources each
 
 | Region | Countries |
 |--------|-----------|
-| 🌎 Americas | 🇺🇸 USA · 🇬🇧 UK · 🇨🇦 Canada · 🇲🇽 Mexico · 🇧🇷 Brazil |
+| 🌎 Americas | 🇺🇸 USA · 🇬🇧 UK · 🇨🇦 Canada · 🇲🇽 Mexico · 🇧🇷 Brazil · 🇨🇷 Costa Rica |
 | 🌍 Europe | 🇫🇷 France · 🇩🇪 Germany · 🇪🇸 Spain · 🇮🇹 Italy · 🇷🇺 Russia · 🇺🇦 Ukraine · 🇹🇷 Turkey |
 | 🌏 Asia-Pacific | 🇯🇵 Japan · 🇨🇳 China · 🇮🇳 India · 🇦🇺 Australia · 🇹🇼 Taiwan · 🇸🇬 Singapore · 🇰🇷 South Korea |
 | 🕌 Middle East | 🇸🇦 Saudi Arabia · 🇮🇷 Iran · 🇦🇪 UAE |
@@ -324,12 +325,14 @@ During development with 25 countries the multi-turn tool-use approach accumulate
 
 | Method | Output file | Key data |
 |--------|-------------|----------|
-| `_render_index()` | `index.html` | 25 region cards grouped by continent + breaking news ticker |
-| `_render_region()` × 25 | `regions/{country}.html` | Full digest + JS category filter tabs + grouped region switcher |
+| `_render_index()` | `index.html` | 26 region cards grouped by continent + breaking news ticker + day dropdown |
+| `_render_region()` × 26 | `regions/{country}.html` | Full digest + JS category filter tabs + grouped region switcher |
 | `_render_breaking()` | `breaking.html` | Events by category, per-source verification links |
 | `_save_json()` | `data/summaries_DATE.json` + `data/breaking_DATE.json` | Raw JSON for external consumption |
+| `_save_archive_index()` | `index_DATE.html` | Dated snapshot of the index page for the day selector |
+| `_save_dates_manifest()` | `data/available_dates.json` | Ordered list of available dates consumed by the JS day picker |
 
-`shutil.copytree` refreshes the `static/` assets on every run.
+`shutil.copytree` refreshes the `static/` assets on every run. After generation, `main.py` rsyncs `web/output/` to the live EC2 server automatically.
 
 **File:** `web/generator.py:36`
 
@@ -615,6 +618,7 @@ News_agent/
 │           └── breaking.json       # Detected breaking events
 │
 ├── docs/                       # GitHub Pages deployment (copy of web/output/)
+│                               # Live: forwardforecasting.eu/newssummary/
 │
 ├── config.py                   # All constants, model names, region metadata
 ├── main.py                     # CLI: --now · --resume · --demo
@@ -661,14 +665,24 @@ python -m http.server 8080 --directory web/output
 # → http://localhost:8080
 ```
 
-### Deploy to GitHub Pages
+### Deploy to EC2 (automatic)
+
+After each pipeline or `--demo` run, `main.py` automatically rsyncs `web/output/` to the live server:
+
+```
+ubuntu@54.78.82.101:/var/www/forwardforecasting/newssummary/
+→ https://www.forwardforecasting.eu/newssummary/
+```
+
+Requires `~/.ssh/forwardforecasting.pem` to be present. Deploy is skipped gracefully if the key is missing.
+
+### Deploy to GitHub Pages (manual)
 
 ```bash
 cp -r web/output/* docs/
 git add docs/
 git commit -m "update news digest $(date +%Y-%m-%d)"
 git push
-# → https://<your-username>.github.io/news_agent/
 ```
 
 ---
