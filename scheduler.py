@@ -9,25 +9,27 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.cron import CronTrigger
 from rich.console import Console
 
-from config import SCHEDULE_HOUR, SCHEDULE_MINUTE
+from config import SCHEDULE_TIMES
 
 console = Console()
 
 
 def start_scheduler(pipeline_fn: Callable[[], None]) -> None:
-    """Block forever, calling pipeline_fn once daily at the configured time."""
+    """Block forever, calling pipeline_fn three times daily at the configured times."""
     scheduler = BlockingScheduler(timezone="UTC")
-    scheduler.add_job(
-        pipeline_fn,
-        trigger=CronTrigger(hour=SCHEDULE_HOUR, minute=SCHEDULE_MINUTE),
-        id="daily_news_pipeline",
-        name="Daily News Pipeline",
-        misfire_grace_time=3600,  # tolerate up to 1h late start
-    )
+    for hour, minute in SCHEDULE_TIMES:
+        scheduler.add_job(
+            pipeline_fn,
+            trigger=CronTrigger(hour=hour, minute=minute),
+            id=f"news_pipeline_{hour:02d}{minute:02d}",
+            name=f"News Pipeline {hour:02d}:{minute:02d} UTC",
+            misfire_grace_time=3600,
+        )
 
+    times_str = " · ".join(f"{h:02d}:{m:02d}" for h, m in SCHEDULE_TIMES)
     console.print(
-        f"[cyan]Scheduler started[/cyan] — next run at "
-        f"[bold]{SCHEDULE_HOUR:02d}:{SCHEDULE_MINUTE:02d} UTC[/bold] daily. "
+        f"[cyan]Scheduler started[/cyan] — runs at "
+        f"[bold]{times_str} UTC[/bold] daily. "
         "Press Ctrl+C to stop."
     )
 

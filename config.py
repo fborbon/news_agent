@@ -104,8 +104,7 @@ BREAKING_CATEGORIES = {
     "natural_disaster":          {"label": "Natural Disaster",        "icon": "🌪️",  "color": "#27ae60"},
 }
 
-SCHEDULE_HOUR   = int(os.getenv("SCHEDULE_HOUR",   "7"))
-SCHEDULE_MINUTE = int(os.getenv("SCHEDULE_MINUTE", "0"))
+SCHEDULE_TIMES = [(7, 15), (12, 15), (17, 15)]  # (hour, minute) UTC
 
 MAX_ARTICLES_PER_SOURCE = 10
 MAX_ARTICLE_CHARS       = 4000

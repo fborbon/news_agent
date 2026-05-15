@@ -199,12 +199,13 @@ Haiku is Anthropic's fastest and cheapest model. It is pre-wired as the scraping
 
 ### Step 1 — Trigger (`scheduler.py`)
 
-`APScheduler` fires a `BlockingScheduler` with a `CronTrigger` at **07:00 UTC** daily.
-`misfire_grace_time=3600` allows the job to execute up to one hour late (after a restart).
+`APScheduler` fires a `BlockingScheduler` with three `CronTrigger` jobs at **07:15, 12:15, and 17:15 UTC** daily.
+`misfire_grace_time=3600` allows each job to execute up to one hour late (after a restart).
 
 ```
-APScheduler.CronTrigger(hour=7, minute=0, timezone="UTC")
-    └─► OrchestratorAgent.run_pipeline(resume=False)
+APScheduler.CronTrigger(hour=7,  minute=15, timezone="UTC") ─┐
+APScheduler.CronTrigger(hour=12, minute=15, timezone="UTC") ─┼─► OrchestratorAgent.run_pipeline(resume=False)
+APScheduler.CronTrigger(hour=17, minute=15, timezone="UTC") ─┘
 ```
 
 ---
@@ -709,8 +710,7 @@ All settings live in `config.py` and can be overridden via `.env`:
 | `SUMMARIZER_MODEL` | `claude-sonnet-4-6` | Claude model for regional digests (tool-use loop) |
 | `BREAKING_MODEL` | `claude-sonnet-4-6` | Claude model for breaking news (single call) |
 | `SCRAPER_MODEL` | `claude-haiku-4-5-20251001` | Reserved for future LLM-assisted scraping enrichment |
-| `SCHEDULE_HOUR` | `7` | UTC hour for daily pipeline trigger |
-| `SCHEDULE_MINUTE` | `0` | UTC minute for daily pipeline trigger |
+| `SCHEDULE_TIMES` | `[(7,15),(12,15),(17,15)]` | Three daily run times in UTC — hardcoded in `config.py` |
 | `MAX_ARTICLES_PER_SOURCE` | `10` | Max RSS entries fetched per source |
 | `FULL_CONTENT_LIMIT` | `5` | Articles per source that get full trafilatura extraction |
 | `MAX_ARTICLE_CHARS` | `4 000` | Character cap on extracted article text |

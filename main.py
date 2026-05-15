@@ -19,7 +19,7 @@ from pathlib import Path
 from rich.console import Console
 from rich.panel import Panel
 
-from config import ANTHROPIC_API_KEY, SCHEDULE_HOUR, SCHEDULE_MINUTE, WEB_OUTPUT_DIR
+from config import ANTHROPIC_API_KEY, SCHEDULE_TIMES, WEB_OUTPUT_DIR
 from agents.orchestrator import OrchestratorAgent
 from web.generator import WebGenerator
 
