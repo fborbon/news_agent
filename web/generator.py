@@ -74,6 +74,7 @@ class WebGenerator:
             self._render_region(region, digest, today)
         self._render_breaking(breaking_events, today)
         self._save_json(region_summaries, breaking_events, today)
+        self._save_world_news(region_summaries)
         self._save_archive_index(today)
         self._save_dates_manifest(today)
         console.log(f"[green]✓ Site generated → {self.out}[/green]")
@@ -201,6 +202,31 @@ class WebGenerator:
         )
         (data_dir / f"breaking_{today}.json").write_text(
             json.dumps(breaking, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+
+    def _save_world_news(self, summaries: dict) -> None:
+        """Write data/world_news.json with up to 3 stories per covered region."""
+        world: dict[str, dict] = {}
+        for region, digest in summaries.items():
+            meta = REGION_META.get(region, {})
+            stories_raw = digest.get("stories", [])[:3]
+            stories = [
+                {
+                    "headline": s.get("headline", ""),
+                    "url":      s.get("url", ""),
+                    "source":   s.get("source", ""),
+                }
+                for s in stories_raw
+            ]
+            world[region] = {
+                "label":   meta.get("label", region),
+                "flag":    meta.get("flag", ""),
+                "stories": stories,
+            }
+        data_dir = self.out / "data"
+        data_dir.mkdir(exist_ok=True)
+        (data_dir / "world_news.json").write_text(
+            json.dumps(world, ensure_ascii=False, indent=2), encoding="utf-8"
         )
 
     def _save_archive_index(self, today: str) -> None:

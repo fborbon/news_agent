@@ -25,14 +25,19 @@ REGIONS = [
     "usa", "uk", "france", "germany", "spain", "japan", "china", "italy",
     # Americas
     "canada", "mexico", "brazil", "costa_rica",
+    "argentina", "colombia", "chile", "peru",
     # Asia-Pacific
     "india", "australia", "taiwan", "singapore", "south_korea",
+    "indonesia", "pakistan", "thailand", "vietnam", "malaysia", "philippines", "bangladesh", "new_zealand",
     # Europe / Eurasia
     "russia", "ukraine", "turkey",
+    "netherlands", "portugal", "poland", "sweden", "norway", "denmark", "switzerland", "austria", "belgium", "greece",
     # Middle East
     "saudi_arabia", "iran", "uae",
+    "israel", "iraq", "qatar",
     # Africa
     "south_africa", "morocco", "egypt",
+    "nigeria", "kenya", "ethiopia", "ghana", "algeria", "tunisia",
 ]
 
 REGION_META = {
@@ -50,24 +55,55 @@ REGION_META = {
     "mexico":       {"label": "Mexico",         "flag": "🇲🇽", "lang": "Spanish/English",   "group": "Americas"},
     "brazil":       {"label": "Brazil",         "flag": "🇧🇷", "lang": "Portuguese/English", "group": "Americas"},
     "costa_rica":   {"label": "Costa Rica",     "flag": "🇨🇷", "lang": "Spanish/English",   "group": "Americas"},
+    "argentina":    {"label": "Argentina",      "flag": "🇦🇷", "lang": "Spanish/English",   "group": "Americas"},
+    "colombia":     {"label": "Colombia",       "flag": "🇨🇴", "lang": "Spanish/English",   "group": "Americas"},
+    "chile":        {"label": "Chile",          "flag": "🇨🇱", "lang": "Spanish/English",   "group": "Americas"},
+    "peru":         {"label": "Peru",           "flag": "🇵🇪", "lang": "Spanish/English",   "group": "Americas"},
     # Asia-Pacific
     "india":        {"label": "India",          "flag": "🇮🇳", "lang": "English/Hindi",    "group": "Asia-Pacific"},
     "australia":    {"label": "Australia",      "flag": "🇦🇺", "lang": "English",          "group": "Asia-Pacific"},
     "taiwan":       {"label": "Taiwan",         "flag": "🇹🇼", "lang": "English/Chinese",  "group": "Asia-Pacific"},
     "singapore":    {"label": "Singapore",      "flag": "🇸🇬", "lang": "English",          "group": "Asia-Pacific"},
     "south_korea":  {"label": "South Korea",    "flag": "🇰🇷", "lang": "English/Korean",   "group": "Asia-Pacific"},
+    "indonesia":    {"label": "Indonesia",      "flag": "🇮🇩", "lang": "Indonesian/English", "group": "Asia-Pacific"},
+    "pakistan":     {"label": "Pakistan",       "flag": "🇵🇰", "lang": "Urdu/English",      "group": "Asia-Pacific"},
+    "thailand":     {"label": "Thailand",       "flag": "🇹🇭", "lang": "Thai/English",      "group": "Asia-Pacific"},
+    "vietnam":      {"label": "Vietnam",        "flag": "🇻🇳", "lang": "Vietnamese/English", "group": "Asia-Pacific"},
+    "malaysia":     {"label": "Malaysia",       "flag": "🇲🇾", "lang": "Malay/English",     "group": "Asia-Pacific"},
+    "philippines":  {"label": "Philippines",    "flag": "🇵🇭", "lang": "Filipino/English",  "group": "Asia-Pacific"},
+    "bangladesh":   {"label": "Bangladesh",     "flag": "🇧🇩", "lang": "Bengali/English",   "group": "Asia-Pacific"},
+    "new_zealand":  {"label": "New Zealand",    "flag": "🇳🇿", "lang": "English",           "group": "Asia-Pacific"},
     # Europe / Eurasia
     "russia":       {"label": "Russia",         "flag": "🇷🇺", "lang": "English/Russian",  "group": "Europe"},
     "ukraine":      {"label": "Ukraine",        "flag": "🇺🇦", "lang": "English/Ukrainian", "group": "Europe"},
     "turkey":       {"label": "Turkey",         "flag": "🇹🇷", "lang": "Turkish/English",  "group": "Europe"},
+    "netherlands":  {"label": "Netherlands",    "flag": "🇳🇱", "lang": "Dutch/English",    "group": "Europe"},
+    "portugal":     {"label": "Portugal",       "flag": "🇵🇹", "lang": "Portuguese/English", "group": "Europe"},
+    "poland":       {"label": "Poland",         "flag": "🇵🇱", "lang": "Polish/English",   "group": "Europe"},
+    "sweden":       {"label": "Sweden",         "flag": "🇸🇪", "lang": "Swedish/English",  "group": "Europe"},
+    "norway":       {"label": "Norway",         "flag": "🇳🇴", "lang": "Norwegian/English", "group": "Europe"},
+    "denmark":      {"label": "Denmark",        "flag": "🇩🇰", "lang": "Danish/English",   "group": "Europe"},
+    "switzerland":  {"label": "Switzerland",    "flag": "🇨🇭", "lang": "German/French/English", "group": "Europe"},
+    "austria":      {"label": "Austria",        "flag": "🇦🇹", "lang": "German/English",   "group": "Europe"},
+    "belgium":      {"label": "Belgium",        "flag": "🇧🇪", "lang": "French/Dutch/English", "group": "Europe"},
+    "greece":       {"label": "Greece",         "flag": "🇬🇷", "lang": "Greek/English",    "group": "Europe"},
     # Middle East
     "saudi_arabia": {"label": "Saudi Arabia",   "flag": "🇸🇦", "lang": "Arabic/English",   "group": "Middle East"},
     "iran":         {"label": "Iran",           "flag": "🇮🇷", "lang": "English/Persian",  "group": "Middle East"},
     "uae":          {"label": "UAE",            "flag": "🇦🇪", "lang": "Arabic/English",   "group": "Middle East"},
+    "israel":       {"label": "Israel",         "flag": "🇮🇱", "lang": "Hebrew/English",   "group": "Middle East"},
+    "iraq":         {"label": "Iraq",           "flag": "🇮🇶", "lang": "Arabic/English",   "group": "Middle East"},
+    "qatar":        {"label": "Qatar",          "flag": "🇶🇦", "lang": "Arabic/English",   "group": "Middle East"},
     # Africa
     "south_africa": {"label": "South Africa",   "flag": "🇿🇦", "lang": "English",          "group": "Africa"},
     "morocco":      {"label": "Morocco",        "flag": "🇲🇦", "lang": "French/Arabic",    "group": "Africa"},
     "egypt":        {"label": "Egypt",          "flag": "🇪🇬", "lang": "English/Arabic",   "group": "Africa"},
+    "nigeria":      {"label": "Nigeria",        "flag": "🇳🇬", "lang": "English",          "group": "Africa"},
+    "kenya":        {"label": "Kenya",          "flag": "🇰🇪", "lang": "English/Swahili",  "group": "Africa"},
+    "ethiopia":     {"label": "Ethiopia",       "flag": "🇪🇹", "lang": "Amharic/English",  "group": "Africa"},
+    "ghana":        {"label": "Ghana",          "flag": "🇬🇭", "lang": "English",          "group": "Africa"},
+    "algeria":      {"label": "Algeria",        "flag": "🇩🇿", "lang": "Arabic/French",    "group": "Africa"},
+    "tunisia":      {"label": "Tunisia",        "flag": "🇹🇳", "lang": "Arabic/French",    "group": "Africa"},
 }
 
 REGION_GROUPS = ["Americas", "Asia-Pacific", "Europe", "Middle East", "Africa"]

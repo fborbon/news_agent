@@ -29,7 +29,7 @@
       <option value="">{{ today }}</option>
     </select>
   </div>
-  <p class="hero-sub">{{ region_cards | length }} countries &middot; 78 sources &middot; AI-summarised</p>
+  <p class="hero-sub">{{ region_cards | length }} countries &middot; 171 sources &middot; AI-summarised</p>
   {% if critical_count > 0 %}
   <a href="{{ root }}breaking.html" class="btn btn-alert">
     ⚡ {{ critical_count }} Critical Breaking Event{{ 's' if critical_count != 1 }}
@@ -37,110 +37,142 @@
   {% endif %}
 </section>
 
-<!-- ── Today by Topic ────────────────────────────────────────────── -->
-{% if topic_highlights %}
-<section class="section">
-  <h2 class="section-title">📋 Today by Topic</h2>
-  <div class="topic-grid">
-    {% for topic_key, tmeta in story_categories.items() %}
-    {% set story = topic_highlights.get(topic_key) %}
-    <div class="topic-card{% if not story %} topic-card--empty{% endif %}">
-      <div class="topic-header">
-        <span>{{ tmeta.icon }}</span>
-        <span>{{ tmeta.label }}</span>
-      </div>
-      {% if story %}
-      <a href="{{ story.url or '#' }}" target="_blank" rel="noopener" class="topic-headline">{{ story.headline }}</a>
-      <div class="topic-meta">
-        <span>{{ story.region_flag }}</span>
-        <span class="topic-source">{{ story.source }}</span>
-      </div>
-      {% else %}
-      <p class="topic-missing">No coverage today</p>
-      {% endif %}
-    </div>
-    {% endfor %}
+<!-- ── Tab nav ────────────────────────────────────────────────────── -->
+<nav class="tab-nav">
+  <button class="tab-btn active" data-tab="map">🌍 World Map</button>
+  <button class="tab-btn" data-tab="topics">📋 By Topic</button>
+  <button class="tab-btn" data-tab="regions">🗺️ By Region</button>
+</nav>
+
+<!-- ── Tab pane 1: World Map ─────────────────────────────────────── -->
+<div class="tab-pane active" id="tab-map">
+  <div class="map-wrap">
+    <div id="world-map-container"></div>
+    <div id="map-popup"></div>
   </div>
-</section>
-{% endif %}
+  <p class="map-legend">
+    <span class="leg-cov">■</span> Covered countries &nbsp;|&nbsp;
+    <span class="leg-uncov">■</span> Not yet covered &nbsp;·&nbsp;
+    Click a highlighted country to open its digest
+  </p>
+</div>
 
-<!-- ── Region groups ─────────────────────────────────────────────── -->
-{% set groups = [
-  ("🌎 Americas",      ["usa","canada","mexico","brazil","costa_rica"]),
-  ("🌍 Europe",        ["uk","france","germany","spain","italy","russia","ukraine","turkey"]),
-  ("🌏 Asia-Pacific",  ["japan","china","india","australia","taiwan","singapore","south_korea"]),
-  ("🕌 Middle East",   ["saudi_arabia","iran","uae"]),
-  ("🌍 Africa",        ["south_africa","morocco","egypt"]),
-] %}
-
-{% set card_map = {} %}
-{% for card in region_cards %}{% if card_map.update({card.key: card}) %}{% endif %}{% endfor %}
-
-{% for group_label, group_keys in groups %}
-{% set group_cards = [] %}
-{% for k in group_keys %}{% if k in card_map %}{% if group_cards.append(card_map[k]) %}{% endif %}{% endif %}{% endfor %}
-{% if group_cards %}
-<section class="section">
-  <h2 class="section-title">{{ group_label }}</h2>
-  <div class="region-grid">
-    {% for card in group_cards %}
-    <article class="region-card">
-      <div class="card-header">
-        <span class="card-flag">{{ card.flag }}</span>
-        <span class="card-label">{{ card.label }}</span>
-      </div>
-      <p class="card-overview">{{ card.overview }}</p>
-      {% if card.stories %}
-      <ul class="card-headlines">
-        {% for story in card.stories %}
-        <li>
-          <span class="cat-badge cat-{{ story.category }}">{{ story.category }}</span>
-          {% if story.url %}
-          <a href="{{ story.url }}" target="_blank" rel="noopener" class="headline-link">{{ story.headline }}</a>
-          {% else %}
-          {{ story.headline }}
-          {% endif %}
-        </li>
-        {% endfor %}
-      </ul>
-      {% endif %}
-      <a href="{{ root }}regions/{{ card.key }}.html" class="card-cta">Full digest →</a>
-    </article>
-    {% endfor %}
-  </div>
-</section>
-{% endif %}
-{% endfor %}
-
-<!-- ── Breaking news section ─────────────────────────────────────── -->
-{% if breaking_events %}
-<section class="section">
-  <h2 class="section-title">⚡ Breaking News</h2>
-  <div class="breaking-list">
-    {% for ev in breaking_events %}
-    <article class="breaking-card severity-{{ ev.severity }}" id="{{ ev.id }}">
-      <div class="breaking-card-header">
-        <span class="breaking-icon">{{ breaking_categories[ev.category].icon }}</span>
-        <span class="breaking-cat-label">{{ breaking_categories[ev.category].label }}</span>
-        <span class="severity-badge">{{ ev.severity | upper }}</span>
-      </div>
-      <h3 class="breaking-title">{{ ev.title }}</h3>
-      <p class="breaking-summary">{{ ev.summary }}</p>
-      <div class="breaking-sources">
-        <span class="sources-label">Sources:</span>
-        {% for src in ev.sources[:5] %}
-        {% if src.url %}
-        <a href="{{ src.url }}" target="_blank" rel="noopener" class="source-chip">{{ src.name }}</a>
+<!-- ── Tab pane 2: By Topic ──────────────────────────────────────── -->
+<div class="tab-pane" id="tab-topics">
+  {% if topic_highlights %}
+  <section class="section">
+    <h2 class="section-title">📋 Today by Topic</h2>
+    <div class="topic-grid">
+      {% for topic_key, tmeta in story_categories.items() %}
+      {% set story = topic_highlights.get(topic_key) %}
+      <div class="topic-card{% if not story %} topic-card--empty{% endif %}">
+        <div class="topic-header">
+          <span>{{ tmeta.icon }}</span>
+          <span>{{ tmeta.label }}</span>
+        </div>
+        {% if story %}
+        <a href="{{ story.url or '#' }}" target="_blank" rel="noopener" class="topic-headline">{{ story.headline }}</a>
+        <div class="topic-meta">
+          <span>{{ story.region_flag }}</span>
+          <span class="topic-source">{{ story.source }}</span>
+        </div>
         {% else %}
-        <span class="source-chip">{{ src.name }}</span>
+        <p class="topic-missing">No coverage today</p>
         {% endif %}
-        {% endfor %}
       </div>
-    </article>
-    {% endfor %}
-  </div>
-  <a href="{{ root }}breaking.html" class="btn btn-outline">View all breaking events →</a>
-</section>
-{% endif %}
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+</div>
 
+<!-- ── Tab pane 3: By Region ─────────────────────────────────────── -->
+<div class="tab-pane" id="tab-regions">
+
+  {% set groups = [
+    ("🌎 Americas",      ["usa","canada","mexico","brazil","costa_rica","argentina","colombia","chile","peru"]),
+    ("🌍 Europe",        ["uk","france","germany","spain","italy","russia","ukraine","turkey","netherlands","portugal","poland","sweden","norway","denmark","switzerland","austria","belgium","greece"]),
+    ("🌏 Asia-Pacific",  ["japan","china","india","australia","taiwan","singapore","south_korea","indonesia","pakistan","thailand","vietnam","malaysia","philippines","bangladesh","new_zealand"]),
+    ("🕌 Middle East",   ["saudi_arabia","iran","uae","israel","iraq","qatar"]),
+    ("🌍 Africa",        ["south_africa","morocco","egypt","nigeria","kenya","ethiopia","ghana","algeria","tunisia"]),
+  ] %}
+
+  {% set card_map = {} %}
+  {% for card in region_cards %}{% if card_map.update({card.key: card}) %}{% endif %}{% endfor %}
+
+  {% for group_label, group_keys in groups %}
+  {% set group_cards = [] %}
+  {% for k in group_keys %}{% if k in card_map %}{% if group_cards.append(card_map[k]) %}{% endif %}{% endif %}{% endfor %}
+  {% if group_cards %}
+  <section class="section">
+    <h2 class="section-title">{{ group_label }}</h2>
+    <div class="region-grid">
+      {% for card in group_cards %}
+      <article class="region-card">
+        <div class="card-header">
+          <span class="card-flag">{{ card.flag }}</span>
+          <span class="card-label">{{ card.label }}</span>
+        </div>
+        <p class="card-overview">{{ card.overview }}</p>
+        {% if card.stories %}
+        <ul class="card-headlines">
+          {% for story in card.stories %}
+          <li>
+            <span class="cat-badge cat-{{ story.category }}">{{ story.category }}</span>
+            {% if story.url %}
+            <a href="{{ story.url }}" target="_blank" rel="noopener" class="headline-link">{{ story.headline }}</a>
+            {% else %}
+            {{ story.headline }}
+            {% endif %}
+          </li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+        <a href="{{ root }}regions/{{ card.key }}.html" class="card-cta">Full digest →</a>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+  {% endfor %}
+
+  <!-- ── Breaking news section ───────────────────────────────────── -->
+  {% if breaking_events %}
+  <section class="section">
+    <h2 class="section-title">⚡ Breaking News</h2>
+    <div class="breaking-list">
+      {% for ev in breaking_events %}
+      <article class="breaking-card severity-{{ ev.severity }}" id="{{ ev.id }}">
+        <div class="breaking-card-header">
+          <span class="breaking-icon">{{ breaking_categories[ev.category].icon }}</span>
+          <span class="breaking-cat-label">{{ breaking_categories[ev.category].label }}</span>
+          <span class="severity-badge">{{ ev.severity | upper }}</span>
+        </div>
+        <h3 class="breaking-title">{{ ev.title }}</h3>
+        <p class="breaking-summary">{{ ev.summary }}</p>
+        <div class="breaking-sources">
+          <span class="sources-label">Sources:</span>
+          {% for src in ev.sources[:5] %}
+          {% if src.url %}
+          <a href="{{ src.url }}" target="_blank" rel="noopener" class="source-chip">{{ src.name }}</a>
+          {% else %}
+          <span class="source-chip">{{ src.name }}</span>
+          {% endif %}
+          {% endfor %}
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+    <a href="{{ root }}breaking.html" class="btn btn-outline">View all breaking events →</a>
+  </section>
+  {% endif %}
+
+</div><!-- /tab-regions -->
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
+<script src="{{ static_root }}/js/world-map.js"></script>
 {% endblock %}

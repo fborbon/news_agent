@@ -2,7 +2,7 @@
 
 **🔴 Live site → [https://www.forwardforecasting.eu/newssummary/](https://www.forwardforecasting.eu/newssummary/)**
 
-> A multi-agent AI system that scrapes, summarises, and analyses the world's top newspapers every day — covering **26 countries · 78 RSS sources** — and publishing a fully static news website powered by Claude.
+> A multi-agent AI system that scrapes, summarises, and analyses the world's top newspapers every day — covering **57 countries · 171 RSS sources** — and publishing a fully static news website powered by Claude. Features an interactive world map with hover-to-preview news popups.
 
 ![Python](https://img.shields.io/badge/Python-3.11+-3776ab?logo=python&logoColor=white)
 ![Claude](https://img.shields.io/badge/Claude-Sonnet%204.6-7c3aed?logo=anthropic&logoColor=white)
@@ -28,28 +28,28 @@
 
 ## 1. Project Overview
 
-This portfolio project demonstrates a **production-grade agentic AI pipeline** built on Anthropic's Claude API. The system runs daily, ingesting live news from 25 countries, and publishes a fully static HTML news site that anyone can read without a running server.
+This portfolio project demonstrates a **production-grade agentic AI pipeline** built on Anthropic's Claude API. The system runs three times daily, ingesting live news from 57 countries across all continents, and publishes a fully static HTML news site featuring an interactive world map, 20-topic coverage grid, and per-region deep-dive pages.
 
 ### What it does every day
 
 | Step | Agent / Component | Output |
 |------|-------------------|--------|
-| **Scrape** | `ScraperAgent` | Up to 312 raw articles (30/country) |
+| **Scrape** | `ScraperAgent` | Up to 1 710 raw articles (30/country × 57) |
 | **Extract** | `ScraperAgent` | Full article text via trafilatura |
-| **Summarise** | `SummarizerAgent` + Claude | 8 curated stories per country with source links |
+| **Summarise** | `SummarizerAgent` + Claude | 10 curated stories per country, 20-topic diversity |
 | **Detect** | `BreakingNewsAgent` + Claude | Up to 15 cross-source breaking events |
-| **Publish** | `WebGenerator` + Jinja2 | 28 static HTML pages + dated archives |
+| **Publish** | `WebGenerator` + Jinja2 | 59 static HTML pages + dated archives + world_news.json |
 | **Deploy** | `rsync` → EC2 | Auto-pushes to forwardforecasting.eu/newssummary/ |
 
 ### Monitored countries — 3 sources each
 
 | Region | Countries |
 |--------|-----------|
-| 🌎 Americas | 🇺🇸 USA · 🇬🇧 UK · 🇨🇦 Canada · 🇲🇽 Mexico · 🇧🇷 Brazil · 🇨🇷 Costa Rica |
-| 🌍 Europe | 🇫🇷 France · 🇩🇪 Germany · 🇪🇸 Spain · 🇮🇹 Italy · 🇷🇺 Russia · 🇺🇦 Ukraine · 🇹🇷 Turkey |
-| 🌏 Asia-Pacific | 🇯🇵 Japan · 🇨🇳 China · 🇮🇳 India · 🇦🇺 Australia · 🇹🇼 Taiwan · 🇸🇬 Singapore · 🇰🇷 South Korea |
-| 🕌 Middle East | 🇸🇦 Saudi Arabia · 🇮🇷 Iran · 🇦🇪 UAE |
-| 🌍 Africa | 🇿🇦 South Africa · 🇲🇦 Morocco · 🇪🇬 Egypt |
+| 🌎 Americas (9) | 🇺🇸 USA · 🇨🇦 Canada · 🇲🇽 Mexico · 🇧🇷 Brazil · 🇨🇷 Costa Rica · 🇦🇷 Argentina · 🇨🇴 Colombia · 🇨🇱 Chile · 🇵🇪 Peru |
+| 🌍 Europe (18) | 🇬🇧 UK · 🇫🇷 France · 🇩🇪 Germany · 🇪🇸 Spain · 🇮🇹 Italy · 🇷🇺 Russia · 🇺🇦 Ukraine · 🇹🇷 Turkey · 🇳🇱 Netherlands · 🇵🇹 Portugal · 🇵🇱 Poland · 🇸🇪 Sweden · 🇳🇴 Norway · 🇩🇰 Denmark · 🇨🇭 Switzerland · 🇦🇹 Austria · 🇧🇪 Belgium · 🇬🇷 Greece |
+| 🌏 Asia-Pacific (15) | 🇯🇵 Japan · 🇨🇳 China · 🇮🇳 India · 🇦🇺 Australia · 🇹🇼 Taiwan · 🇸🇬 Singapore · 🇰🇷 South Korea · 🇮🇩 Indonesia · 🇵🇰 Pakistan · 🇹🇭 Thailand · 🇻🇳 Vietnam · 🇲🇾 Malaysia · 🇵🇭 Philippines · 🇧🇩 Bangladesh · 🇳🇿 New Zealand |
+| 🕌 Middle East (6) | 🇸🇦 Saudi Arabia · 🇮🇷 Iran · 🇦🇪 UAE · 🇮🇱 Israel · 🇮🇶 Iraq · 🇶🇦 Qatar |
+| 🌍 Africa (9) | 🇿🇦 South Africa · 🇲🇦 Morocco · 🇪🇬 Egypt · 🇳🇬 Nigeria · 🇰🇪 Kenya · 🇪🇹 Ethiopia · 🇬🇭 Ghana · 🇩🇿 Algeria · 🇹🇳 Tunisia |
 
 ---
 

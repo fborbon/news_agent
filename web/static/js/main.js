@@ -84,3 +84,14 @@ const ticker = document.querySelector('.ticker');
 if (ticker) {
   ticker.innerHTML += ticker.innerHTML;
 }
+
+/* ── Tab switching ───────────────────────────────────────────────── */
+const tabBtns = document.querySelectorAll('.tab-btn');
+tabBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    tabBtns.forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});

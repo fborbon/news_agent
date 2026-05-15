@@ -61,11 +61,11 @@
 
 <!-- ── Region switcher grouped by continent ──────────────────────── -->
 {% set groups = [
-  ("Americas",     ["usa","canada","mexico","brazil","costa_rica"]),
-  ("Europe",       ["uk","france","germany","spain","italy","russia","ukraine","turkey"]),
-  ("Asia-Pacific", ["japan","china","india","australia","taiwan","singapore","south_korea"]),
-  ("Middle East",  ["saudi_arabia","iran","uae"]),
-  ("Africa",       ["south_africa","morocco","egypt"]),
+  ("Americas",     ["usa","canada","mexico","brazil","costa_rica","argentina","colombia","chile","peru"]),
+  ("Europe",       ["uk","france","germany","spain","italy","russia","ukraine","turkey","netherlands","portugal","poland","sweden","norway","denmark","switzerland","austria","belgium","greece"]),
+  ("Asia-Pacific", ["japan","china","india","australia","taiwan","singapore","south_korea","indonesia","pakistan","thailand","vietnam","malaysia","philippines","bangladesh","new_zealand"]),
+  ("Middle East",  ["saudi_arabia","iran","uae","israel","iraq","qatar"]),
+  ("Africa",       ["south_africa","morocco","egypt","nigeria","kenya","ethiopia","ghana","algeria","tunisia"]),
 ] %}
 <nav class="region-switcher">
   {% for group_label, group_keys in groups %}
