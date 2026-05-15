@@ -678,16 +678,31 @@ python -m http.server 8080 --directory web/output
 # → http://localhost:8080
 ```
 
-### Deploy to EC2 (automatic)
+### Deploy — two modes
 
-After each pipeline or `--demo` run, `main.py` automatically rsyncs `web/output/` to the live server:
+**Running on the EC2 (production):** set `DEPLOY_LOCAL_DIR` in `.env` and the output is copied directly to the web root — no SSH needed:
+
+```bash
+# .env on the EC2
+ANTHROPIC_API_KEY=sk-ant-...
+DEPLOY_LOCAL_DIR=/var/www/forwardforecasting/newssummary
+```
+
+**Running from your laptop:** leave `DEPLOY_LOCAL_DIR` unset. Output is rsynced over SSH using `~/.ssh/forwardforecasting.pem`. Deploy is skipped gracefully if the key is missing.
+
+### Running on EC2 (production setup)
+
+The agent runs on the existing `t3.small` EC2 via cron — zero additional AWS cost:
 
 ```
-ubuntu@54.78.82.101:/var/www/forwardforecasting/newssummary/
-→ https://www.forwardforecasting.eu/newssummary/
+# /var/spool/cron/crontabs/ubuntu
+15  0 * * *  cd ~/news_agent && .venv/bin/python main.py --now >> /var/log/news_agent.log 2>&1
+15  7 * * *  cd ~/news_agent && .venv/bin/python main.py --now >> /var/log/news_agent.log 2>&1
+15 12 * * *  cd ~/news_agent && .venv/bin/python main.py --now >> /var/log/news_agent.log 2>&1
+15 18 * * *  cd ~/news_agent && .venv/bin/python main.py --now >> /var/log/news_agent.log 2>&1
 ```
 
-Requires `~/.ssh/forwardforecasting.pem` to be present. Deploy is skipped gracefully if the key is missing.
+Logs: `tail -f /var/log/news_agent.log`
 
 ### Deploy to GitHub Pages (manual)
 
@@ -710,7 +725,8 @@ All settings live in `config.py` and can be overridden via `.env`:
 | `SUMMARIZER_MODEL` | `claude-sonnet-4-6` | Claude model for regional digests (tool-use loop) |
 | `BREAKING_MODEL` | `claude-sonnet-4-6` | Claude model for breaking news (single call) |
 | `SCRAPER_MODEL` | `claude-haiku-4-5-20251001` | Reserved for future LLM-assisted scraping enrichment |
-| `SCHEDULE_TIMES` | `[(7,15),(12,15),(17,15)]` | Three daily run times in UTC — hardcoded in `config.py` |
+| `SCHEDULE_TIMES` | `[(0,15),(7,15),(12,15),(18,15)]` | Four daily run times in UTC — hardcoded in `config.py` |
+| `DEPLOY_LOCAL_DIR` | *(unset)* | If set, copies output here instead of rsync over SSH (use on EC2) |
 | `MAX_ARTICLES_PER_SOURCE` | `10` | Max RSS entries fetched per source |
 | `FULL_CONTENT_LIMIT` | `5` | Articles per source that get full trafilatura extraction |
 | `MAX_ARTICLE_CHARS` | `4 000` | Character cap on extracted article text |
