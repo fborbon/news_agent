@@ -19,7 +19,7 @@ from pathlib import Path
 from rich.console import Console
 from rich.panel import Panel
 
-from config import ANTHROPIC_API_KEY, SCHEDULE_TIMES, WEB_OUTPUT_DIR
+from config import ANTHROPIC_API_KEY, DEPLOY_LOCAL_DIR, SCHEDULE_TIMES, WEB_OUTPUT_DIR
 from agents.orchestrator import OrchestratorAgent
 from web.generator import WebGenerator
 
@@ -28,6 +28,23 @@ _DEPLOY_DEST = "ubuntu@54.78.82.101:/var/www/forwardforecasting/newssummary/"
 
 
 def _deploy() -> None:
+    # Running on the EC2 itself — copy output directly to the web root
+    if DEPLOY_LOCAL_DIR:
+        import shutil
+        dest = Path(DEPLOY_LOCAL_DIR)
+        dest.mkdir(parents=True, exist_ok=True)
+        for item in WEB_OUTPUT_DIR.iterdir():
+            d = dest / item.name
+            if item.is_dir():
+                if d.exists():
+                    shutil.rmtree(d)
+                shutil.copytree(item, d)
+            else:
+                shutil.copy2(item, d)
+        console.print(f"[green]✓ Deployed locally → {DEPLOY_LOCAL_DIR}[/green]")
+        return
+
+    # Running remotely — rsync over SSH
     if not _DEPLOY_KEY.exists():
         console.print("[yellow]Deploy skipped — SSH key not found.[/yellow]")
         return

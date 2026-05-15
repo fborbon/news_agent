@@ -140,7 +140,11 @@ BREAKING_CATEGORIES = {
     "natural_disaster":          {"label": "Natural Disaster",        "icon": "🌪️",  "color": "#27ae60"},
 }
 
-SCHEDULE_TIMES = [(7, 15), (12, 15), (17, 15)]  # (hour, minute) UTC
+SCHEDULE_TIMES = [(0, 15), (7, 15), (12, 15), (18, 15)]  # (hour, minute) UTC
+
+# When set, output is copied here locally instead of rsynced over SSH.
+# Use on the EC2 itself: DEPLOY_LOCAL_DIR=/var/www/forwardforecasting/newssummary
+DEPLOY_LOCAL_DIR = os.getenv("DEPLOY_LOCAL_DIR", "")
 
 MAX_ARTICLES_PER_SOURCE = 10
 MAX_ARTICLE_CHARS       = 4000

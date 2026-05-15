@@ -26,7 +26,7 @@ def start_scheduler(pipeline_fn: Callable[[], None]) -> None:
             misfire_grace_time=3600,
         )
 
-    times_str = " · ".join(f"{h:02d}:{m:02d}" for h, m in SCHEDULE_TIMES)
+    times_str = "  ·  ".join(f"{h:02d}:{m:02d}" for h, m in SCHEDULE_TIMES)
     console.print(
         f"[cyan]Scheduler started[/cyan] — runs at "
         f"[bold]{times_str} UTC[/bold] daily. "
