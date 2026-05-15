@@ -37,9 +37,36 @@
   {% endif %}
 </section>
 
+<!-- ── Today by Topic ────────────────────────────────────────────── -->
+{% if topic_highlights %}
+<section class="section">
+  <h2 class="section-title">📋 Today by Topic</h2>
+  <div class="topic-grid">
+    {% for topic_key, tmeta in story_categories.items() %}
+    {% set story = topic_highlights.get(topic_key) %}
+    <div class="topic-card{% if not story %} topic-card--empty{% endif %}">
+      <div class="topic-header">
+        <span>{{ tmeta.icon }}</span>
+        <span>{{ tmeta.label }}</span>
+      </div>
+      {% if story %}
+      <a href="{{ story.url or '#' }}" target="_blank" rel="noopener" class="topic-headline">{{ story.headline }}</a>
+      <div class="topic-meta">
+        <span>{{ story.region_flag }}</span>
+        <span class="topic-source">{{ story.source }}</span>
+      </div>
+      {% else %}
+      <p class="topic-missing">No coverage today</p>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
 <!-- ── Region groups ─────────────────────────────────────────────── -->
 {% set groups = [
-  ("🌎 Americas",      ["canada","mexico","brazil","costa_rica","usa"]),
+  ("🌎 Americas",      ["usa","canada","mexico","brazil","costa_rica"]),
   ("🌍 Europe",        ["uk","france","germany","spain","italy","russia","ukraine","turkey"]),
   ("🌏 Asia-Pacific",  ["japan","china","india","australia","taiwan","singapore","south_korea"]),
   ("🕌 Middle East",   ["saudi_arabia","iran","uae"]),

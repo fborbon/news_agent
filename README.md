@@ -275,7 +275,19 @@ The digest is **immediately written to disk** (`data/processed/DATE/region.json`
 }
 ```
 
-Up to **8 stories** per region, categorised as: `politics`, `economy`, `technology`, `environment`, `health`, `culture`, `sports`, or `other`.
+Up to **10 stories** per region. Claude is instructed to maximise topic diversity, covering as many of the 20 topic categories as possible given available articles.
+
+**20 topic categories:**
+
+| Category | Category | Category | Category |
+|----------|----------|----------|----------|
+| 🏛️ Politics | 🌐 World News | 💼 Business & Economy | 💻 Technology |
+| 🏥 Health | 🔬 Science & Environment | 🚔 Crime & Public Safety | 🎭 Entertainment & Culture |
+| ⚽ Sports | 🌟 Lifestyle & Human Interest | 🤖 Artificial Intelligence | 📈 Wall Street |
+| 🏔️ Silicon Valley | 📱 Social Networks | 🌡️ Global Warming | 💸 Cost of Living |
+| 👷 Employment & Work | ⚖️ Gender Equity | 🐾 Pets & Animal Kingdom | 🎬 Music & Movies |
+
+The **index page** shows a "Today by Topic" grid — one representative story per topic aggregated from all 26 regions, guaranteeing every topic has at least one story visible on the homepage.
 
 **File:** `agents/summarizer_agent.py:72`
 

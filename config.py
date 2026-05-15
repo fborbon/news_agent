@@ -72,6 +72,29 @@ REGION_META = {
 
 REGION_GROUPS = ["Americas", "Asia-Pacific", "Europe", "Middle East", "Africa"]
 
+STORY_CATEGORIES = {
+    "politics":                {"label": "Politics",                  "icon": "🏛️"},
+    "world_news":              {"label": "World News",                "icon": "🌐"},
+    "business_economy":        {"label": "Business & Economy",        "icon": "💼"},
+    "technology":              {"label": "Technology",                "icon": "💻"},
+    "health":                  {"label": "Health",                    "icon": "🏥"},
+    "science_environment":     {"label": "Science & Environment",     "icon": "🔬"},
+    "crime_safety":            {"label": "Crime & Public Safety",     "icon": "🚔"},
+    "entertainment_culture":   {"label": "Entertainment & Culture",   "icon": "🎭"},
+    "sports":                  {"label": "Sports",                    "icon": "⚽"},
+    "lifestyle":               {"label": "Lifestyle & Human Interest","icon": "🌟"},
+    "artificial_intelligence": {"label": "Artificial Intelligence",   "icon": "🤖"},
+    "wall_street":             {"label": "Wall Street",               "icon": "📈"},
+    "silicon_valley":          {"label": "Silicon Valley",            "icon": "🏔️"},
+    "social_networks":         {"label": "Social Networks",           "icon": "📱"},
+    "global_warming":          {"label": "Global Warming",            "icon": "🌡️"},
+    "cost_of_living":          {"label": "Cost of Living",            "icon": "💸"},
+    "employment":              {"label": "Employment & Work",         "icon": "👷"},
+    "gender_equity":           {"label": "Gender Equity",             "icon": "⚖️"},
+    "pets_animals":            {"label": "Pets & Animal Kingdom",     "icon": "🐾"},
+    "music_movies":            {"label": "Music & Movies",            "icon": "🎬"},
+}
+
 BREAKING_CATEGORIES = {
     "war_conflict":              {"label": "War & Conflict",          "icon": "⚔️",  "color": "#c0392b"},
     "financial_collapse":        {"label": "Financial Crisis",        "icon": "📉",  "color": "#e67e22"},

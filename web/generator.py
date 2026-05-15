@@ -11,6 +11,7 @@ from rich.console import Console
 from config import (
     BREAKING_CATEGORIES,
     REGION_META,
+    STORY_CATEGORIES,
     TEMPLATES_DIR,
     WEB_OUTPUT_DIR,
     STATIC_DIR,
@@ -19,7 +20,35 @@ from config import (
 console = Console()
 
 # Common template context passed to every page
-_BASE_CTX = dict(region_meta=REGION_META, breaking_categories=BREAKING_CATEGORIES)
+_BASE_CTX = dict(
+    region_meta=REGION_META,
+    breaking_categories=BREAKING_CATEGORIES,
+    story_categories=STORY_CATEGORIES,
+)
+
+# Keywords used to match stories when the category tag is from the old schema
+_TOPIC_KEYWORDS: dict[str, list[str]] = {
+    "politics":                ["election", "government", "parliament", "congress", "president", "prime minister", "policy", "senate", "democrat", "republican"],
+    "world_news":              ["international", "global", "united nations", "diplomatic", "foreign affairs", "summit", "bilateral", "treaty"],
+    "business_economy":        ["economy", "gdp", "trade", "economic", "revenue", "fiscal", "deficit", "exports", "imports", "commerce"],
+    "technology":              ["technology", "tech", "software", "hardware", "digital", "app", "platform", "cyber"],
+    "health":                  ["health", "medical", "hospital", "disease", "vaccine", "pandemic", "mental health", "cancer", "drug", "clinical"],
+    "science_environment":     ["science", "research", "study", "discovery", "space", "nasa", "biodiversity", "ecosystem", "species"],
+    "crime_safety":            ["crime", "arrest", "police", "murder", "theft", "fraud", "shooting", "prison", "trafficking", "gang"],
+    "entertainment_culture":   ["entertainment", "culture", "award", "celebrity", "festival", "exhibition", "theatre", "museum"],
+    "sports":                  ["sport", "football", "soccer", "basketball", "tennis", "olympic", "championship", "league", "athlete", "tournament"],
+    "lifestyle":               ["lifestyle", "travel", "food", "wellness", "fashion", "trend", "family", "parenting", "relationship"],
+    "artificial_intelligence": ["artificial intelligence", " ai ", "machine learning", "chatgpt", "openai", "deepmind", "llm", "large language", "chatbot", "generative ai", "neural network"],
+    "wall_street":             ["stock market", "wall street", "s&p", "nasdaq", "dow jones", "federal reserve", "interest rate", "hedge fund", "ipo", "bond market", "fed rate", "equity market"],
+    "silicon_valley":          ["silicon valley", "apple inc", "google", "alphabet", "meta ", "microsoft", "amazon", "tesla", "startup", "big tech", "venture capital", "zuckerberg", "elon musk"],
+    "social_networks":         ["twitter", " x.com", "instagram", "tiktok", "facebook", "youtube", "social media", "influencer", "viral", "online platform"],
+    "global_warming":          ["climate change", "global warming", "carbon", "emissions", "fossil fuel", "renewable energy", "greenhouse", "net zero", "paris agreement", "cop3"],
+    "cost_of_living":          ["inflation", "cost of living", "housing", "rent", "consumer price", "affordability", "mortgage", "groceries", "purchasing power", "cpi"],
+    "employment":              ["job", "employment", "unemployment", "hiring", "layoff", "remote work", "workforce", "salary", "wage", "labour market", "labor market"],
+    "gender_equity":           ["gender", "women's rights", "feminist", "gender equality", "lgbtq", "reproductive", "pay gap", "diversity", "inclusion", "gender-based"],
+    "pets_animals":            [" pet", " dog ", " cat ", " animal", "wildlife", "conservation", "endangered", " zoo", "veterinary", "shelter", "rescue"],
+    "music_movies":            ["music", " film", " movie", "cinema", "grammy", "oscar", "album", "concert", "netflix", "box office", "streaming", "spotify", "record label"],
+}
 
 
 class WebGenerator:
@@ -39,7 +68,8 @@ class WebGenerator:
     def generate(self, region_summaries: dict[str, dict], breaking_events: list[dict], today: str) -> None:
         console.log("[cyan]Generating static site …[/cyan]")
         self._copy_static()
-        self._render_index(region_summaries, breaking_events, today)
+        topic_highlights = self._build_topic_highlights(region_summaries)
+        self._render_index(region_summaries, breaking_events, today, topic_highlights)
         for region, digest in region_summaries.items():
             self._render_region(region, digest, today)
         self._render_breaking(breaking_events, today)
@@ -52,7 +82,8 @@ class WebGenerator:
     # Page renderers
     # ------------------------------------------------------------------
 
-    def _render_index(self, summaries: dict, breaking: list, today: str) -> None:
+    def _render_index(self, summaries: dict, breaking: list, today: str,
+                      topic_highlights: dict) -> None:
         tmpl = self.env.get_template("index.html")
         region_cards = []
         for region, meta in REGION_META.items():
@@ -71,6 +102,7 @@ class WebGenerator:
             region_cards=region_cards,
             breaking_events=breaking,
             critical_count=sum(1 for e in breaking if e.get("severity") == "critical"),
+            topic_highlights=topic_highlights,
             static_root="static",
             root="",
             active_region=None,
@@ -120,6 +152,46 @@ class WebGenerator:
         if dest.exists():
             shutil.rmtree(dest)
         shutil.copytree(str(STATIC_DIR), str(dest))
+
+    def _build_topic_highlights(self, region_summaries: dict) -> dict:
+        """Return one representative story per STORY_CATEGORIES topic."""
+        all_stories: list[dict] = []
+        for region, digest in region_summaries.items():
+            meta = REGION_META.get(region, {})
+            for story in digest.get("stories", []):
+                all_stories.append({
+                    **story,
+                    "region_key":   region,
+                    "region_label": meta.get("label", region),
+                    "region_flag":  meta.get("flag", ""),
+                })
+
+        used: set[str] = set()
+
+        def _claim(story: dict) -> bool:
+            key = story.get("url") or story.get("headline", "")
+            if not key or key in used:
+                return False
+            used.add(key)
+            return True
+
+        highlights: dict[str, dict] = {}
+        for topic_key in STORY_CATEGORIES:
+            # 1. Exact new-schema category match
+            for s in all_stories:
+                if s.get("category") == topic_key and _claim(s):
+                    highlights[topic_key] = s
+                    break
+            if topic_key in highlights:
+                continue
+            # 2. Keyword fallback (handles old-schema stories)
+            keywords = _TOPIC_KEYWORDS.get(topic_key, [])
+            for s in all_stories:
+                text = (s.get("headline", "") + " " + s.get("summary", "")).lower()
+                if any(kw in text for kw in keywords) and _claim(s):
+                    highlights[topic_key] = s
+                    break
+        return highlights
 
     def _save_json(self, summaries: dict, breaking: list, today: str) -> None:
         data_dir = self.out / "data"

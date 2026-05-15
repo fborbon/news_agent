@@ -24,7 +24,10 @@
   <button class="filter-btn active" data-cat="all">All stories</button>
   {% set cats = digest.stories | map(attribute='category') | unique | list %}
   {% for cat in cats %}
-  <button class="filter-btn" data-cat="{{ cat }}">{{ cat | capitalize }}</button>
+  {% set cat_meta = story_categories.get(cat) %}
+  <button class="filter-btn" data-cat="{{ cat }}">
+    {% if cat_meta %}{{ cat_meta.icon }} {{ cat_meta.label }}{% else %}{{ cat | replace('_',' ') | title }}{% endif %}
+  </button>
   {% endfor %}
 </div>
 
@@ -33,7 +36,10 @@
   {% for story in digest.stories %}
   <article class="story-card" data-cat="{{ story.category }}">
     <div class="story-meta">
-      <span class="cat-badge cat-{{ story.category }}">{{ story.category }}</span>
+      {% set sm = story_categories.get(story.category) %}
+    <span class="cat-badge cat-{{ story.category }}">
+      {% if sm %}{{ sm.icon }} {{ sm.label }}{% else %}{{ story.category | replace('_',' ') | title }}{% endif %}
+    </span>
       {% if story.source_home %}
       <a href="{{ story.source_home }}" target="_blank" rel="noopener" class="story-source-link">{{ story.source }}</a>
       {% else %}
@@ -55,7 +61,7 @@
 
 <!-- ── Region switcher grouped by continent ──────────────────────── -->
 {% set groups = [
-  ("Americas",     ["canada","mexico","brazil","usa"]),
+  ("Americas",     ["usa","canada","mexico","brazil","costa_rica"]),
   ("Europe",       ["uk","france","germany","spain","italy","russia","ukraine","turkey"]),
   ("Asia-Pacific", ["japan","china","india","australia","taiwan","singapore","south_korea"]),
   ("Middle East",  ["saudi_arabia","iran","uae"]),
