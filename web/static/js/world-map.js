@@ -242,11 +242,11 @@
     const countries = topojson.feature(topoData, topoData.objects.countries);
     const borders   = topojson.mesh(topoData, topoData.objects.countries, (a, b) => a !== b);
 
-    /* Helper: get popup rect relative to map-wrap */
-    function getWrapRect() {
-      const wrap = container.closest('.map-wrap') || container.parentElement;
-      return wrap ? wrap.getBoundingClientRect() : container.getBoundingClientRect();
-    }
+    /* Ocean background */
+    svg.append('rect')
+      .attr('class', 'map-ocean')
+      .attr('width', width)
+      .attr('height', height);
 
     svg.selectAll('.map-country')
       .data(countries.features)
@@ -293,32 +293,19 @@
           popup.classList.add('mp--visible');
         })
         .on('mousemove', function (event) {
-          const wrapRect = getWrapRect();
-          const svgRect  = svg.node().getBoundingClientRect();
+          /* Popup is position:fixed — use viewport coords directly */
+          const popW = 295;
+          const popH = popup.offsetHeight || 180;
+          const pad  = 16;
+          const vw   = window.innerWidth;
+          const vh   = window.innerHeight;
 
-          /* cursor position relative to svg */
-          const cx = event.clientX - svgRect.left;
-          const cy = event.clientY - svgRect.top;
+          let left = event.clientX + pad;
+          let top  = event.clientY - popH / 2;
 
-          /* scale svg coords to container coords */
-          const scaleX = svgRect.width  / width;
-          const scaleY = svgRect.height / height;
-
-          /* position relative to map-wrap */
-          const relX = (event.clientX - wrapRect.left);
-          const relY = (event.clientY - wrapRect.top);
-
-          const popW = 290;
-          const popH = popup.offsetHeight || 160;
-          const pad  = 14;
-
-          let left = relX + pad;
-          let top  = relY + pad;
-
-          if (left + popW > wrapRect.width  - 8) left = relX - popW - pad;
-          if (top  + popH > wrapRect.height - 8) top  = relY - popH - pad;
-          if (left < 4) left = 4;
-          if (top  < 4) top  = 4;
+          if (left + popW > vw - 8) left = event.clientX - popW - pad;
+          if (top  < 8)             top  = 8;
+          if (top  + popH > vh - 8) top  = vh - popH - 8;
 
           popup.style.left = left + 'px';
           popup.style.top  = top  + 'px';

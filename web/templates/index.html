@@ -40,53 +40,24 @@
 <!-- ── Tab nav ────────────────────────────────────────────────────── -->
 <nav class="tab-nav">
   <button class="tab-btn active" data-tab="map">🌍 World Map</button>
-  <button class="tab-btn" data-tab="topics">📋 By Topic</button>
-  <button class="tab-btn" data-tab="regions">🗺️ By Region</button>
+  <button class="tab-btn" data-tab="regions">🗺️ Regional News</button>
+  <button class="tab-btn" data-tab="breaking">⚡ Breaking News</button>
 </nav>
 
-<!-- ── Tab pane 1: World Map ─────────────────────────────────────── -->
+<!-- ══ Tab 1: World Map ══════════════════════════════════════════ -->
 <div class="tab-pane active" id="tab-map">
   <div class="map-wrap">
     <div id="world-map-container"></div>
     <div id="map-popup"></div>
   </div>
   <p class="map-legend">
-    <span class="leg-cov">■</span> Covered countries &nbsp;|&nbsp;
-    <span class="leg-uncov">■</span> Not yet covered &nbsp;·&nbsp;
-    Click a highlighted country to open its digest
+    <span class="leg-cov">■</span> {{ region_cards | length }} countries with live coverage &nbsp;·&nbsp;
+    <span class="leg-uncov">■</span> No coverage yet &nbsp;·&nbsp;
+    Hover to preview · Click to open full digest
   </p>
 </div>
 
-<!-- ── Tab pane 2: By Topic ──────────────────────────────────────── -->
-<div class="tab-pane" id="tab-topics">
-  {% if topic_highlights %}
-  <section class="section">
-    <h2 class="section-title">📋 Today by Topic</h2>
-    <div class="topic-grid">
-      {% for topic_key, tmeta in story_categories.items() %}
-      {% set story = topic_highlights.get(topic_key) %}
-      <div class="topic-card{% if not story %} topic-card--empty{% endif %}">
-        <div class="topic-header">
-          <span>{{ tmeta.icon }}</span>
-          <span>{{ tmeta.label }}</span>
-        </div>
-        {% if story %}
-        <a href="{{ story.url or '#' }}" target="_blank" rel="noopener" class="topic-headline">{{ story.headline }}</a>
-        <div class="topic-meta">
-          <span>{{ story.region_flag }}</span>
-          <span class="topic-source">{{ story.source }}</span>
-        </div>
-        {% else %}
-        <p class="topic-missing">No coverage today</p>
-        {% endif %}
-      </div>
-      {% endfor %}
-    </div>
-  </section>
-  {% endif %}
-</div>
-
-<!-- ── Tab pane 3: By Region ─────────────────────────────────────── -->
+<!-- ══ Tab 2: Regional News ══════════════════════════════════════ -->
 <div class="tab-pane" id="tab-regions">
 
   {% set groups = [
@@ -136,38 +107,48 @@
   {% endif %}
   {% endfor %}
 
-  <!-- ── Breaking news section ───────────────────────────────────── -->
-  {% if breaking_events %}
+</div><!-- /tab-regions -->
+
+<!-- ══ Tab 3: Breaking News Ranking ═════════════════════════════ -->
+<div class="tab-pane" id="tab-breaking">
   <section class="section">
-    <h2 class="section-title">⚡ Breaking News</h2>
-    <div class="breaking-list">
-      {% for ev in breaking_events %}
-      <article class="breaking-card severity-{{ ev.severity }}" id="{{ ev.id }}">
-        <div class="breaking-card-header">
-          <span class="breaking-icon">{{ breaking_categories[ev.category].icon }}</span>
-          <span class="breaking-cat-label">{{ breaking_categories[ev.category].label }}</span>
-          <span class="severity-badge">{{ ev.severity | upper }}</span>
-        </div>
-        <h3 class="breaking-title">{{ ev.title }}</h3>
-        <p class="breaking-summary">{{ ev.summary }}</p>
-        <div class="breaking-sources">
-          <span class="sources-label">Sources:</span>
-          {% for src in ev.sources[:5] %}
-          {% if src.url %}
-          <a href="{{ src.url }}" target="_blank" rel="noopener" class="source-chip">{{ src.name }}</a>
-          {% else %}
-          <span class="source-chip">{{ src.name }}</span>
-          {% endif %}
-          {% endfor %}
-        </div>
-      </article>
+    <h2 class="section-title">⚡ Breaking News Ranking</h2>
+    {% if breaking_events %}
+    <div class="rank-list">
+      {% set rank = namespace(n=0) %}
+      {% for sev in ['critical', 'high', 'moderate'] %}
+        {% for ev in breaking_events if ev.severity == sev %}
+          {% set rank.n = rank.n + 1 %}
+          <div class="rank-card severity-{{ ev.severity }}">
+            <div class="rank-num">{{ rank.n }}</div>
+            <div class="rank-body">
+              <div class="rank-header">
+                <span>{{ breaking_categories[ev.category].icon }}</span>
+                <span class="rank-cat">{{ breaking_categories[ev.category].label }}</span>
+                <span class="severity-badge">{{ ev.severity | upper }}</span>
+              </div>
+              <h3 class="rank-title">{{ ev.title }}</h3>
+              <p class="rank-summary">{{ ev.summary }}</p>
+              <div class="rank-sources">
+                {% for src in ev.sources[:5] %}
+                {% if src.url %}
+                <a href="{{ src.url }}" target="_blank" rel="noopener" class="source-chip">{{ src.name }}</a>
+                {% else %}
+                <span class="source-chip">{{ src.name }}</span>
+                {% endif %}
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        {% endfor %}
       {% endfor %}
     </div>
-    <a href="{{ root }}breaking.html" class="btn btn-outline">View all breaking events →</a>
+    <a href="{{ root }}breaking.html" class="btn btn-outline">Full breaking news analysis →</a>
+    {% else %}
+    <p class="empty-state">No breaking events detected today.</p>
+    {% endif %}
   </section>
-  {% endif %}
-
-</div><!-- /tab-regions -->
+</div><!-- /tab-breaking -->
 
 {% endblock %}
 
