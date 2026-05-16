@@ -2,11 +2,12 @@
 
 **🔴 Live site → [https://www.forwardforecasting.eu/globalnews/](https://www.forwardforecasting.eu/globalnews/)**
 
-> A multi-agent AI system that scrapes, summarises, and analyses the world's top newspapers every day — covering **57 countries · 171 RSS sources** — and publishing a fully static news website powered by Claude. Features an interactive world map with hover-to-preview news popups.
+> A multi-agent AI system that scrapes, summarises, and analyses the world's top newspapers every day — covering **22 countries · 66 RSS sources** — and publishing a fully static news website powered by Amazon Nova on AWS Bedrock. Features an interactive world map with hover-to-preview news popups.
 
 ![Python](https://img.shields.io/badge/Python-3.11+-3776ab?logo=python&logoColor=white)
-![Claude](https://img.shields.io/badge/Claude-Sonnet%204.6-7c3aed?logo=anthropic&logoColor=white)
-![Agents](https://img.shields.io/badge/Agentic%20AI-Tool%20Use-16a085)
+![AWS Bedrock](https://img.shields.io/badge/AWS-Bedrock-FF9900?logo=amazonwebservices&logoColor=white)
+![Nova](https://img.shields.io/badge/Amazon-Nova%20Lite%20%2B%20Pro-FF9900?logo=amazonwebservices&logoColor=white)
+![Agentic AI](https://img.shields.io/badge/Agentic%20AI-Tool%20Use-16a085)
 ![License](https://img.shields.io/badge/License-MIT-22c55e)
 
 ---
@@ -23,6 +24,7 @@
 8. [Project Structure](#8-project-structure)
 9. [Setup & Usage](#9-setup--usage)
 10. [Configuration Reference](#10-configuration-reference)
+11. [Cost & Resource Consumption](#11-cost--resource-consumption)
 
 ---
 
@@ -36,8 +38,8 @@ This portfolio project demonstrates a **production-grade agentic AI pipeline** b
 |------|-------------------|--------|
 | **Scrape** | `ScraperAgent` | Up to 330 raw articles (15/country × 22) |
 | **Extract** | `ScraperAgent` | Full article text via trafilatura |
-| **Summarise** | `SummarizerAgent` + Claude Haiku | 5 curated stories per country, topic diversity |
-| **Detect** | `BreakingNewsAgent` + Claude Sonnet | Up to 15 cross-source breaking events |
+| **Summarise** | `SummarizerAgent` + Nova Lite | 5 curated stories per country, topic diversity |
+| **Detect** | `BreakingNewsAgent` + Nova Pro | Up to 15 cross-source breaking events |
 | **Publish** | `WebGenerator` + Jinja2 | 24 static HTML pages + dated archives + world_news.json |
 | **Deploy** | `rsync` → EC2 | Auto-pushes to forwardforecasting.eu/globalnews/ |
 
@@ -64,7 +66,7 @@ This portfolio project demonstrates a **production-grade agentic AI pipeline** b
 **Generative AI** refers to models that can produce new content — text, images, audio, code — rather than just classifying or predicting from existing patterns. These models are trained on vast corpora and learn to generate statistically plausible, coherent output conditioned on a prompt.
 
 **How this project uses GenAI:**
-Claude generates every summary, digest, and breaking-news analysis in the pipeline. Given a set of raw article texts, Claude *writes* editorial-quality journalism: thematic overviews, concise story summaries in English (regardless of the source language), severity assessments, and cross-source perspective analyses. This is pure generative output — not retrieved from a database, not templated, and not reproducible by rule-based code.
+Amazon Nova generates every summary, digest, and breaking-news analysis in the pipeline. Given a set of raw article texts, Nova *writes* editorial-quality journalism: thematic overviews, concise story summaries in English (regardless of the source language), severity assessments, and cross-source perspective analyses. This is pure generative output — not retrieved from a database, not templated, and not reproducible by rule-based code.
 
 ---
 
@@ -78,10 +80,10 @@ At inference time the model receives a **context window** — a flat sequence of
 
 | Property | How it's exploited |
 |----------|--------------------|
-| **Multilingual comprehension** | Claude reads French, Spanish, Italian, German, Portuguese, Arabic, Turkish, Korean feeds and summarises them in English without a separate translation step |
-| **200 K-token context window** | The SummarizerAgent fits 30 articles (≈15 K tokens) in a single call; the BreakingNewsAgent fits 200 curated stories (≈10 K tokens) in one call |
+| **Multilingual comprehension** | Nova reads French, Spanish, Italian, German, Portuguese, Arabic, Korean feeds and summarises them in English without a separate translation step |
+| **Large context window** | The SummarizerAgent fits 15 articles (≈4 K tokens) per region call; the BreakingNewsAgent fits 110 curated stories (≈20 K tokens) in one call |
 | **Instruction following** | System-prompt contracts ("return ONLY raw JSON, no markdown fences") are obeyed reliably enough to build automated pipelines on top |
-| **Parametric world knowledge** | Claude knows that *The Japan Times* is Japanese, that a Hormuz blockade affects oil prices, that ICBM stands for intercontinental ballistic missile — so summaries are contextually correct without extra retrieval |
+| **Parametric world knowledge** | Nova knows that *The Japan Times* is Japanese, that a Hormuz blockade affects oil prices, that ICBM stands for intercontinental ballistic missile — so summaries are contextually correct without extra retrieval |
 
 ---
 
@@ -133,7 +135,7 @@ Claude resumes and emits final JSON digest
 |-------|------|---------|
 | `SummarizerAgent` | `build_regional_digest` | Forces Claude to commit to a "ready" state before writing the digest — acts as a deliberate reasoning step, not computation |
 
-> **Design note:** The `BreakingNewsAgent` was originally designed with `report_event` / `finish_detection` tools. In production the multi-turn context (25 countries × articles payload + accumulated tool-call history) repeatedly exceeded the 30 K token/minute rate limit. It was redesigned as a **single direct call** — sending the 200 curated digest stories and receiving the complete JSON event array in one response. This is documented honestly because real-world engineering always involves such trade-offs.
+> **Design note:** The `BreakingNewsAgent` was originally designed with `report_event` / `finish_detection` tools. In production the multi-turn context (22 countries × articles payload + accumulated tool-call history) repeatedly exceeded the 30 K token/minute rate limit. It was redesigned as a **single direct call** — sending the 200 curated digest stories and receiving the complete JSON event array in one response. This is documented honestly because real-world engineering always involves such trade-offs.
 
 ---
 
@@ -148,49 +150,56 @@ Claude is an LLM — it generates text token by token. Getting reliable JSON req
 
 ## 3. Models — Selection, Strengths & Configuration
 
-### 3.1 Claude Sonnet 4.6
+Both models are accessed via the **AWS Bedrock Converse API** using `boto3`. No Anthropic API key is required.
 
-**Used by:** `SummarizerAgent` (per-region digests) and `BreakingNewsAgent` (global event detection)
+### 3.1 Amazon Nova Lite — Summarisation
 
-Claude Sonnet 4.6 is Anthropic's mid-tier frontier model — positioned between the fastest (Haiku) and most capable (Opus) models. It is trained with **Constitutional AI (CAI)** and **RLHF** (Reinforcement Learning from Human Feedback) to follow instructions precisely, produce safe outputs, and reason accurately across long contexts.
+**Used by:** `SummarizerAgent` (per-region digests)
 
-**Why Sonnet and not Opus or Haiku?**
+Nova Lite is Amazon's cost-optimised multimodal model. It handles structured JSON output, multilingual comprehension, and instruction-following reliably at a fraction of the cost of larger models.
 
-| Criterion | Haiku | **Sonnet 4.6** | Opus |
-|-----------|-------|----------------|------|
-| Editorial summary quality | Too terse, schema violations | ✅ Excellent | Marginally better |
-| Multilingual comprehension | Adequate | ✅ Strong | Strong |
-| Instruction following (JSON) | Unreliable | ✅ Reliable | Very reliable |
-| Cost per region call | Cheapest | ✅ Balanced | 5× more expensive |
-| Speed | Fastest | ✅ Fast enough | Slowest |
+**Why Nova Lite for summarisation?**
 
-**Strengths relevant to this project:**
-- **200 K-token context window** — fits entire regional article batches without chunking
-- **Multilingual** — reads French, Arabic, Japanese, Korean, Portuguese, Turkish without translation
-- **Consistent schema adherence** — reliably follows the system-prompt JSON contract
-- **Long-form coherent output** — 15-event JSON arrays with multi-paragraph summaries
+| Criterion | Nova Micro | **Nova Lite** | Nova Pro |
+|-----------|-----------|---------------|----------|
+| Structured JSON fidelity | Adequate | ✅ Reliable | Very reliable |
+| Multilingual comprehension | Basic | ✅ Strong | Strong |
+| Cost (input) | $0.035/MTok | ✅ $0.06/MTok | $0.80/MTok |
+| Speed | Fastest | ✅ Fast | Moderate |
+| Context window | 128 K | ✅ 300 K | 300 K |
 
-**Configuration per agent:**
+**Configuration:**
 
-| Parameter | SummarizerAgent | BreakingNewsAgent | Rationale |
-|-----------|:--------------:|:-----------------:|-----------|
-| `model` | `claude-sonnet-4-6` | `claude-sonnet-4-6` | Best cost/quality for editorial reasoning |
-| `max_tokens` | `4096` | `16 000` | Breaking news for 25 countries can yield 15 events × ~1 500 chars ≈ 22 500 chars; 16 K tokens prevents truncation |
-| `temperature` | API default | API default | Not overridden — default is appropriate for factual summarisation constrained by system prompt |
-| `tools` | `[build_regional_digest]` | *(none — single call)* | Minimal toolsets reduce prompt tokens and ambiguity |
-| Retry strategy | Exponential back-off | Exponential back-off | 60 s → 120 s → 240 s → 300 s cap on `RateLimitError` |
+| Parameter | Value | Rationale |
+|-----------|-------|-----------|
+| `modelId` | `us.amazon.nova-lite-v1:0` | Cross-region inference profile (US) |
+| `maxTokens` | `4096` | Sufficient for 5-story digest |
+| `tools` | `[build_regional_digest]` | Reasoning scaffold before JSON output |
+| Retry strategy | Exponential back-off | 60 s → 120 s → 240 s → 300 s cap on `ThrottlingException` |
 
-**Key system-prompt design decisions:**
+---
 
-- **URL-preservation rule** (`"The 'url' field MUST be the exact URL from the input article. Never invent URLs."`) — exploits Claude's instruction following to prevent hallucinated links in 100% of tested runs.
-- **Language normalisation** (`"Write in clear, journalistic English regardless of the source language."`) — eliminates a separate translation step across 14 non-English feed languages.
-- **Concrete schema examples** in the prompt outperform abstract descriptions for JSON fidelity.
-- **15-event cap** in the BreakingNewsAgent system prompt prevents response truncation under the `max_tokens` budget.
+### 3.2 Amazon Nova Pro — Breaking News Detection
 
-### 3.2 Claude Haiku 4.5
+**Used by:** `BreakingNewsAgent` (global event detection, single call)
 
-**Defined in `config.SCRAPER_MODEL`; reserved for future use.**
-Haiku is Anthropic's fastest and cheapest model. It is pre-wired as the scraping model for potential future tasks such as per-article topic classification or paywall detection. In the current implementation, scraping is pure Python — no LLM overhead needed for I/O work.
+Nova Pro is Amazon's most capable model. It handles the harder reasoning task: scanning 110 curated stories across 22 countries, identifying cross-source event clusters, and synthesising severity assessments.
+
+**Configuration:**
+
+| Parameter | Value | Rationale |
+|-----------|-------|-----------|
+| `modelId` | `us.amazon.nova-pro-v1:0` | Cross-region inference profile (US) |
+| `maxTokens` | `5000` | Up to 15 events × ~300 tokens each |
+| `tools` | *(none — single call)* | One-shot JSON array output |
+| Retry strategy | Exponential back-off | Same as above |
+
+**Key system-prompt design decisions (both models):**
+
+- **URL-preservation rule** — prevents hallucinated links in 100% of tested runs.
+- **Language normalisation** — eliminates a separate translation step across multilingual feeds.
+- **Concrete schema examples** — outperform abstract descriptions for JSON fidelity.
+- **15-event cap** — prevents response truncation under the `max_tokens` budget.
 
 ---
 
@@ -287,7 +296,7 @@ Up to **10 stories** per region. Claude is instructed to maximise topic diversit
 | 🏔️ Silicon Valley | 📱 Social Networks | 🌡️ Global Warming | 💸 Cost of Living |
 | 👷 Employment & Work | ⚖️ Gender Equity | 🐾 Pets & Animal Kingdom | 🎬 Music & Movies |
 
-The **index page** shows a "Today by Topic" grid — one representative story per topic aggregated from all 26 regions, guaranteeing every topic has at least one story visible on the homepage.
+The **index page** shows a "Today by Topic" grid — one representative story per topic aggregated from all 22 regions, guaranteeing every topic has at least one story visible on the homepage.
 
 **File:** `agents/summarizer_agent.py:72`
 
@@ -295,7 +304,7 @@ The **index page** shows a "Today by Topic" grid — one representative story pe
 
 ### Step 6 — Digest Slimming (before Breaking News call)
 
-After all 25 regions are summarised, the digests are flattened into a compact detection payload:
+After all 22 regions are summarised, the digests are flattened into a compact detection payload:
 
 ```python
 stories = [
@@ -303,7 +312,7 @@ stories = [
     for region, digest in region_summaries.items()
     for story in digest["stories"]
 ]
-# → 25 regions × 8 stories = 200 items × ~50 tokens each ≈ 10 K tokens total
+# → 22 regions × 8 stories = 200 items × ~50 tokens each ≈ 10 K tokens total
 ```
 
 **Why digests and not raw articles?**
@@ -315,7 +324,7 @@ Raw articles (750 items × 80-char blurbs) produce a ~42 K-token payload. The fi
 
 ### Step 7 — Breaking News Detection (`BreakingNewsAgent.detect`) — ⚡ *LLM, single call*
 
-`BreakingNewsAgent` uses a **single direct API call** (no tool-use loop) to detect, group, and synthesise breaking events across all 25 countries simultaneously:
+`BreakingNewsAgent` uses a **single direct API call** (no tool-use loop) to detect, group, and synthesise breaking events across all 22 countries simultaneously:
 
 1. Sends the 200-story compact payload in one `messages.create()` call.
 2. Claude scans for all 6 breaking-news categories, groups cross-country coverage of the same event, writes a 3–5 sentence unified summary, notes how different national outlets frame the story differently, and assigns severity.
@@ -325,7 +334,7 @@ Raw articles (750 items × 80-char blurbs) produce a ~42 K-token payload. The fi
 The result is saved to `data/processed/DATE/breaking.json`.
 
 **Why single-call instead of tool-use?**
-During development with 25 countries the multi-turn tool-use approach accumulated context across turns (initial 10 K tokens + tool-call history), pushing the second API call above the 30 K token/minute limit. A single call keeps the total at ~10 K tokens in and ~10 K tokens out — well within limits.
+During development with 22 countries the multi-turn tool-use approach accumulated context across turns (initial 10 K tokens + tool-call history), pushing the second API call above the 30 K token/minute limit. A single call keeps the total at ~10 K tokens in and ~10 K tokens out — well within limits.
 
 **File:** `agents/breaking_news_agent.py:71`
 
@@ -337,7 +346,7 @@ During development with 25 countries the multi-turn tool-use approach accumulate
 
 | Method | Output file | Key data |
 |--------|-------------|----------|
-| `_render_index()` | `index.html` | 26 region cards grouped by continent + breaking news ticker + day dropdown |
+| `_render_index()` | `index.html` | 22 region cards grouped by continent + breaking news ticker + day dropdown |
 | `_render_region()` × 26 | `regions/{country}.html` | Full digest + JS category filter tabs + grouped region switcher |
 | `_render_breaking()` | `breaking.html` | Events by category, per-source verification links |
 | `_save_json()` | `data/summaries_DATE.json` + `data/breaking_DATE.json` | Raw JSON for external consumption |
@@ -356,18 +365,18 @@ During development with 25 countries the multi-turn tool-use approach accumulate
 
 | Library | Version | AI Technology | Role in this project |
 |---------|---------|---------------|----------------------|
-| **anthropic** | ≥ 0.40 | **GenAI · LLM · Agentic AI · Tool Use** | Official Claude API client. `client.messages.create()` drives all generative steps. Handles tool_use / tool_result message construction, typed response objects, and streaming. |
+| **boto3** | ≥ 1.34 | **GenAI · LLM · Agentic AI · Tool Use** | AWS SDK for Python. `client.converse()` drives all generative steps via the Bedrock Converse API — a unified interface across all Bedrock models. Handles tool_use / tool_result message construction and typed response dicts. |
 
 ```python
 # Core usage — base_agent.py
-response = client.messages.create(
-    model="claude-sonnet-4-6",
-    max_tokens=4096,
-    system=system_prompt,   # editorial contract
-    tools=tools,            # JSON-schema tool definitions
-    messages=messages,      # full conversation history
+response = client.converse(
+    modelId="us.amazon.nova-lite-v1:0",
+    system=[{"text": system_prompt}],   # editorial contract
+    messages=messages,                  # full conversation history
+    toolConfig={"tools": tools},        # JSON-schema tool definitions
+    inferenceConfig={"maxTokens": 4096},
 )
-# stop_reason ∈ {"end_turn", "tool_use", "max_tokens"}
+# stopReason ∈ {"end_turn", "tool_use", "max_tokens"}
 ```
 
 ---
@@ -402,7 +411,7 @@ text   = trafilatura.extract(html, include_comments=False, include_tables=False)
 | Library | Version | AI Technology | Role |
 |---------|---------|---------------|------|
 | **APScheduler** | ≥ 3.10 | None | `BlockingScheduler` with `CronTrigger` for daily 07:00 UTC pipeline execution. `misfire_grace_time=3600` tolerates late starts. |
-| **python-dotenv** | ≥ 1.0 | None | Loads `ANTHROPIC_API_KEY` and schedule overrides from `.env` into `os.environ` at startup. |
+| **python-dotenv** | ≥ 1.0 | None | Loads `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `BEDROCK_REGION` from `.env` into `os.environ` at startup. |
 | **rich** | ≥ 13.9 | None | Styled terminal output — timestamped agent logs, coloured region headers, completion panels. |
 
 ---
@@ -418,7 +427,7 @@ flowchart TD
     subgraph ORCH["OrchestratorAgent  ·  orchestrator.py"]
         B[run_pipeline] --> C{resume?\ncheck disk}
         C -->|cached| CACHE[(data/processed/DATE/\nregion.json × 25)]
-        C -->|fresh| LOOP[loop 25 regions]
+        C -->|fresh| LOOP[loop 22 regions]
         LOOP --> SC[ScraperAgent\n.scrape_region]
         SC --> SU[SummarizerAgent\n.summarize_region]
         SU --> SAVE1[(Save region.json\nimmediately)]
@@ -526,7 +535,7 @@ flowchart TD
     end
 
     subgraph SLIM2["Digest slimming — breaking_news_agent.py:78"]
-        V1["25 regions × 8 stories\n= 200 items × ~50 tokens\n≈ 10 K tokens total"]
+        V1["22 regions × 8 stories\n= 200 items × ~50 tokens\n≈ 10 K tokens total"]
         U3 --> V1
     end
 
@@ -548,7 +557,7 @@ flowchart TD
     end
 
     subgraph OUT["Output — Static Site"]
-        Y1["🌐 index.html\n25 region cards grouped by continent"]
+        Y1["🌐 index.html\n22 region cards grouped by continent"]
         Y2["🌐 regions/usa.html … egypt.html\n200 stories · 200 clickable source links"]
         Y3["🌐 breaking.html\n≤15 events · per-source verify links"]
         X1 --> Y1
@@ -609,7 +618,7 @@ News_agent/
 │   └── breaking_news_agent.py  # Claude Sonnet 4.6 · single call · global event detection
 │
 ├── sources/
-│   └── news_sources.py         # 75 verified RSS feeds across 25 countries
+│   └── news_sources.py         # 75 verified RSS feeds across 22 countries
 │
 ├── web/
 │   ├── generator.py            # Jinja2 static site builder (27 pages)
@@ -650,7 +659,7 @@ git clone https://github.com/fborbon/news_agent.git
 cd news_agent
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env          # add your ANTHROPIC_API_KEY
+cp .env.example .env          # add AWS credentials
 ```
 
 ### Run
@@ -683,7 +692,9 @@ python -m http.server 8080 --directory web/output
 
 ```bash
 # .env on the EC2
-ANTHROPIC_API_KEY=sk-ant-...
+AWS_ACCESS_KEY_ID=your_key
+AWS_SECRET_ACCESS_KEY=your_secret
+BEDROCK_REGION=us-east-1
 DEPLOY_LOCAL_DIR=/var/www/forwardforecasting/globalnews
 ```
 
@@ -695,10 +706,7 @@ The agent runs on the existing `t3.small` EC2 via cron — zero additional AWS c
 
 ```
 # /var/spool/cron/crontabs/ubuntu
-15  0 * * *  cd ~/news_agent && .venv/bin/python main.py --now >> /var/log/news_agent.log 2>&1
 15  7 * * *  cd ~/news_agent && .venv/bin/python main.py --now >> /var/log/news_agent.log 2>&1
-15 12 * * *  cd ~/news_agent && .venv/bin/python main.py --now >> /var/log/news_agent.log 2>&1
-15 18 * * *  cd ~/news_agent && .venv/bin/python main.py --now >> /var/log/news_agent.log 2>&1
 ```
 
 Logs: `tail -f /var/log/news_agent.log`
@@ -720,13 +728,90 @@ All settings live in `config.py` and can be overridden via `.env`:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `ANTHROPIC_API_KEY` | — | **Required.** Your Anthropic API key |
-| `SUMMARIZER_MODEL` | `claude-sonnet-4-6` | Claude model for regional digests (tool-use loop) |
-| `BREAKING_MODEL` | `claude-sonnet-4-6` | Claude model for breaking news (single call) |
-| `SCRAPER_MODEL` | `claude-haiku-4-5-20251001` | Reserved for future LLM-assisted scraping enrichment |
-| `SCHEDULE_TIMES` | `[(0,15),(7,15),(12,15),(18,15)]` | Four daily run times in UTC — hardcoded in `config.py` |
+| `AWS_ACCESS_KEY_ID` | — | AWS credentials for Bedrock (or use IAM instance role) |
+| `AWS_SECRET_ACCESS_KEY` | — | AWS credentials for Bedrock (or use IAM instance role) |
+| `BEDROCK_REGION` | `us-east-1` | AWS region for Bedrock API calls |
+| `SUMMARIZER_MODEL` | `us.amazon.nova-lite-v1:0` | Nova model for regional digests (tool-use loop) |
+| `BREAKING_MODEL` | `us.amazon.nova-pro-v1:0` | Nova model for breaking news (single call) |
+| `SCHEDULE_TIMES` | `[(7, 15)]` | Single daily run at 07:15 UTC — hardcoded in `config.py` |
 | `DEPLOY_LOCAL_DIR` | *(unset)* | If set, copies output here instead of rsync over SSH (use on EC2) |
-| `MAX_ARTICLES_PER_SOURCE` | `10` | Max RSS entries fetched per source |
+| `MAX_ARTICLES_PER_SOURCE` | `5` | Max RSS entries fetched per source |
 | `FULL_CONTENT_LIMIT` | `5` | Articles per source that get full trafilatura extraction |
-| `MAX_ARTICLE_CHARS` | `4 000` | Character cap on extracted article text |
+| `MAX_ARTICLE_CHARS` | `1 500` | Character cap on extracted article text |
 | `RSS_TIMEOUT` | `15` | HTTP timeout for article downloads (seconds) |
+
+---
+
+## 11. Cost & Resource Consumption
+
+All figures are based on measured token usage from actual pipeline runs (22 countries, 1 run/day).
+
+### 11.1 AWS Bedrock — LLM API
+
+#### Token usage per run
+
+| Component | Model | Input tokens | Output tokens |
+|-----------|-------|-------------|---------------|
+| 22 × region summarisation | Nova Lite | ~89,000 | ~19,000 |
+| 1 × breaking news detection | Nova Pro | ~20,000 | ~1,500 |
+| **Total per run** | | **~109,000** | **~20,500** |
+
+#### Bedrock pricing & cost
+
+| Model | Input price | Output price |
+|-------|------------|--------------|
+| Amazon Nova Lite | $0.06 / MTok | $0.24 / MTok |
+| Amazon Nova Pro | $0.80 / MTok | $3.20 / MTok |
+
+| Period | Nova Lite | Nova Pro | **Total Bedrock** |
+|--------|-----------|----------|-------------------|
+| Per run | $0.010 | $0.021 | **$0.031** |
+| Per month (30 runs) | $0.30 | $0.63 | **$0.93** |
+| **Per year (365 runs)** | **$3.65** | **$7.67** | **$11.32** |
+
+---
+
+### 11.2 AWS EC2 — Infrastructure
+
+The pipeline runs as a cron job on an existing `t3.small` instance (eu-west-1) that also hosts the portfolio site, SP500bot, and social-pulse. The full EC2 cost is shared across all projects.
+
+| Resource | Unit price | Monthly | Yearly |
+|----------|-----------|---------|--------|
+| EC2 t3.small on-demand (24/7) | $0.023/hr | $16.56 | $198.72 |
+| EBS gp3 20 GB root volume | $0.088/GB/mo | $1.76 | $21.12 |
+| Outbound bandwidth (static site) | ~$0.09/GB | ~$0.50 | ~$6.00 |
+| **EC2 subtotal** | | **~$18.82** | **~$225.84** |
+
+> **Incremental EC2 cost from this project:** ~$0 — the instance was already running. The news agent adds ~2 min of CPU time/day and ~50 MB of storage.
+
+---
+
+### 11.3 IAM — `news-agent` User
+
+| Resource | Cost |
+|----------|------|
+| IAM user | Free |
+| Bedrock API calls | Covered above |
+| Data transfer (EC2 → Bedrock in us-east-1) | Free (AWS internal) |
+
+---
+
+### 11.4 Total Cost Summary
+
+| Cost centre | Monthly | Yearly |
+|-------------|---------|--------|
+| AWS Bedrock (Nova Lite + Pro) | $0.93 | $11.32 |
+| EC2 t3.small + EBS (shared) | $18.82 | $225.84 |
+| **Grand total** | **~$19.75** | **~$237.16** |
+| **Bedrock only** *(incremental)* | **~$0.93** | **~$11.32** |
+
+> The EC2 was already paid for. If you attribute only the incremental cost of running this project, the total is **under $1/month** — roughly $11/year.
+
+#### Cost evolution during this project
+
+| Configuration | Runs/day | Countries | Model | Monthly Bedrock |
+|---------------|----------|-----------|-------|-----------------|
+| Initial | 4 | 57 | Claude Sonnet 4.6 | ~$427 |
+| 1 run/day + Haiku | 1 | 57 | Claude Haiku | ~$24 |
+| Reduced countries | 1 | 22 | Claude Haiku | ~$8 |
+| **Current (Bedrock)** | **1** | **22** | **Nova Lite + Pro** | **~$0.93** |
