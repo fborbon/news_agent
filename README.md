@@ -1,6 +1,6 @@
 # 🌍 Global News Intelligence Agent
 
-**🔴 Live site → [https://www.forwardforecasting.eu/newssummary/](https://www.forwardforecasting.eu/newssummary/)**
+**🔴 Live site → [https://www.forwardforecasting.eu/globalnews/](https://www.forwardforecasting.eu/globalnews/)**
 
 > A multi-agent AI system that scrapes, summarises, and analyses the world's top newspapers every day — covering **57 countries · 171 RSS sources** — and publishing a fully static news website powered by Claude. Features an interactive world map with hover-to-preview news popups.
 
@@ -39,7 +39,7 @@ This portfolio project demonstrates a **production-grade agentic AI pipeline** b
 | **Summarise** | `SummarizerAgent` + Claude Haiku | 5 curated stories per country, topic diversity |
 | **Detect** | `BreakingNewsAgent` + Claude Sonnet | Up to 15 cross-source breaking events |
 | **Publish** | `WebGenerator` + Jinja2 | 24 static HTML pages + dated archives + world_news.json |
-| **Deploy** | `rsync` → EC2 | Auto-pushes to forwardforecasting.eu/newssummary/ |
+| **Deploy** | `rsync` → EC2 | Auto-pushes to forwardforecasting.eu/globalnews/ |
 
 ### Monitored countries — 3 sources each
 
@@ -630,7 +630,7 @@ News_agent/
 │           └── breaking.json       # Detected breaking events
 │
 ├── docs/                       # GitHub Pages deployment (copy of web/output/)
-│                               # Live: forwardforecasting.eu/newssummary/
+│                               # Live: forwardforecasting.eu/globalnews/
 │
 ├── config.py                   # All constants, model names, region metadata
 ├── main.py                     # CLI: --now · --resume · --demo
@@ -684,7 +684,7 @@ python -m http.server 8080 --directory web/output
 ```bash
 # .env on the EC2
 ANTHROPIC_API_KEY=sk-ant-...
-DEPLOY_LOCAL_DIR=/var/www/forwardforecasting/newssummary
+DEPLOY_LOCAL_DIR=/var/www/forwardforecasting/globalnews
 ```
 
 **Running from your laptop:** leave `DEPLOY_LOCAL_DIR` unset. Output is rsynced over SSH using `~/.ssh/forwardforecasting.pem`. Deploy is skipped gracefully if the key is missing.
