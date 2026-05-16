@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import json
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date
 from pathlib import Path
 
@@ -15,6 +17,9 @@ from agents.breaking_news_agent import BreakingNewsAgent
 
 console = Console()
 
+# Parallel workers — 4 keeps us well under Anthropic's concurrent-request limit
+_MAX_WORKERS = 4
+
 
 class OrchestratorAgent:
     """Drives the full daily news pipeline with per-region result persistence."""
@@ -27,6 +32,7 @@ class OrchestratorAgent:
         self.region_summaries: dict[str, dict] = {}
         self.all_articles: list[dict] = []
         self.breaking_events: list[dict] = []
+        self._lock = threading.Lock()
 
     # ------------------------------------------------------------------
     # Public API
@@ -39,39 +45,18 @@ class OrchestratorAgent:
 
         console.rule(f"[bold cyan]News Agent Pipeline — {today}")
 
-        # ── Step 1: Scrape + Summarize each region ────────────────────
-        for region in REGIONS:
-            summary_path = day_dir / f"{region}.json"
-
-            if resume and summary_path.exists():
-                console.log(f"[dim]▶ {region.upper()} — loaded from cache[/dim]")
-                digest = json.loads(summary_path.read_text(encoding="utf-8"))
-                self.region_summaries[region] = digest
-                # Reload raw articles for breaking-news pool
-                raw_path = day_dir / f"{region}_raw.json"
-                if raw_path.exists():
-                    articles = json.loads(raw_path.read_text(encoding="utf-8"))
-                    self.all_articles.extend(articles)
-                continue
-
-            console.log(f"\n[yellow bold]▶ {region.upper()}[/yellow bold]")
-
-            articles = self._scraper.scrape_region(region)
-            for a in articles:
-                a["region"] = region
-            self.all_articles.extend(articles)
-            console.log(f"  [green]✓[/green] scraped {len(articles)} articles")
-
-            # Persist raw articles for recovery
-            raw_path = day_dir / f"{region}_raw.json"
-            raw_path.write_text(json.dumps(articles, ensure_ascii=False, indent=2), encoding="utf-8")
-
-            digest = self._summarizer.summarize_region(region, articles, today)
-            self.region_summaries[region] = digest
-            console.log(f"  [green]✓[/green] summarized → {len(digest.get('stories', []))} stories")
-
-            # Persist digest immediately — survives a crash later in the pipeline
-            summary_path.write_text(json.dumps(digest, ensure_ascii=False, indent=2), encoding="utf-8")
+        # ── Step 1: Scrape + Summarize regions in parallel ────────────
+        with ThreadPoolExecutor(max_workers=_MAX_WORKERS) as pool:
+            futures = {
+                pool.submit(self._process_region, region, day_dir, today, resume): region
+                for region in REGIONS
+            }
+            for future in as_completed(futures):
+                region = futures[future]
+                try:
+                    future.result()
+                except Exception as exc:
+                    console.log(f"[red]✗ {region.upper()} failed: {exc}[/red]")
 
         # ── Step 2: Breaking news across all regions ──────────────────
         breaking_path = day_dir / "breaking.json"
@@ -100,3 +85,42 @@ class OrchestratorAgent:
             "region_summaries": self.region_summaries,
             "breaking_events":  self.breaking_events,
         }
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
+    def _process_region(self, region: str, day_dir: Path, today: str, resume: bool) -> None:
+        """Scrape + summarize one region; safe to run in a thread."""
+        summary_path = day_dir / f"{region}.json"
+
+        if resume and summary_path.exists():
+            console.log(f"[dim]▶ {region.upper()} — loaded from cache[/dim]")
+            digest = json.loads(summary_path.read_text(encoding="utf-8"))
+            raw_path = day_dir / f"{region}_raw.json"
+            articles: list[dict] = []
+            if raw_path.exists():
+                articles = json.loads(raw_path.read_text(encoding="utf-8"))
+            with self._lock:
+                self.region_summaries[region] = digest
+                self.all_articles.extend(articles)
+            return
+
+        console.log(f"[yellow bold]▶ {region.upper()}[/yellow bold]")
+
+        articles = self._scraper.scrape_region(region)
+        for a in articles:
+            a["region"] = region
+        console.log(f"  [green]✓[/green] {region.upper()} scraped {len(articles)} articles")
+
+        raw_path = day_dir / f"{region}_raw.json"
+        raw_path.write_text(json.dumps(articles, ensure_ascii=False, indent=2), encoding="utf-8")
+
+        digest = self._summarizer.summarize_region(region, articles, today)
+        console.log(f"  [green]✓[/green] {region.upper()} summarized → {len(digest.get('stories', []))} stories")
+
+        summary_path.write_text(json.dumps(digest, ensure_ascii=False, indent=2), encoding="utf-8")
+
+        with self._lock:
+            self.region_summaries[region] = digest
+            self.all_articles.extend(articles)

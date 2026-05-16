@@ -28,7 +28,7 @@
 
 ## 1. Project Overview
 
-This portfolio project demonstrates a **production-grade agentic AI pipeline** built on Anthropic's Claude API. The system runs three times daily, ingesting live news from 57 countries across all continents, and publishes a fully static HTML news site featuring an interactive world map, 20-topic coverage grid, and per-region deep-dive pages.
+This portfolio project demonstrates a **production-grade agentic AI pipeline** built on Anthropic's Claude API. The system runs four times daily, ingesting live news from 57 countries across all continents, and publishes a fully static HTML news site featuring an interactive world map, 20-topic coverage grid, and per-region deep-dive pages. Regions are processed in parallel (4 concurrent workers) cutting pipeline time from ~90 min to ~25 min.
 
 ### What it does every day
 
@@ -103,7 +103,7 @@ This project implements two established agentic design patterns:
 The `SummarizerAgent` inherits `BaseAgent` and drives Claude through a multi-turn conversation: it sends articles, Claude calls `build_regional_digest` (a deliberate reasoning scaffold), Python returns an acknowledgment, and Claude then emits the final JSON digest. The loop retries automatically on rate-limit errors with exponential back-off (60 s → 120 s → 240 s → 300 s cap).
 
 **Pattern B — Agents-as-Tools (Orchestrator)**
-The `OrchestratorAgent` treats each specialist (`ScraperAgent`, `SummarizerAgent`, `BreakingNewsAgent`) as a callable sub-system, sequencing them through a Python loop. This mirrors the pattern used inside Claude's own computer-use and multi-step task features — higher-level coordinators delegate to specialised workers.
+The `OrchestratorAgent` treats each specialist (`ScraperAgent`, `SummarizerAgent`, `BreakingNewsAgent`) as a callable sub-system. Regions are processed in **parallel** via `ThreadPoolExecutor` (4 workers) — each region's scrape + summarise runs concurrently, with a `threading.Lock` protecting shared state. Breaking-news detection runs sequentially after all regions complete. This mirrors the pattern used inside Claude's own computer-use and multi-step task features — higher-level coordinators delegate to specialised workers.
 
 **Why not a single monolithic prompt?**
 Splitting work across agents gives: independent failure recovery (each region saved to disk immediately), model routing (cheap model for I/O, capable model for reasoning), and clean separation of concerns that makes the codebase testable.
