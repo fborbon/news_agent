@@ -28,28 +28,27 @@
 
 ## 1. Project Overview
 
-This portfolio project demonstrates a **production-grade agentic AI pipeline** built on Anthropic's Claude API. The system runs four times daily, ingesting live news from 57 countries across all continents, and publishes a fully static HTML news site featuring an interactive world map, 20-topic coverage grid, and per-region deep-dive pages. Regions are processed in parallel (4 concurrent workers) cutting pipeline time from ~90 min to ~25 min.
+This portfolio project demonstrates a **production-grade agentic AI pipeline** built on Anthropic's Claude API. The system runs once daily at 07:15 UTC, ingesting live news from 22 countries across all continents, and publishes a fully static HTML news site featuring an interactive world map, 5-story-per-country digests, and per-region deep-dive pages. Regions are processed in parallel (4 concurrent workers). Summarisation uses Claude Haiku (cost-optimised); breaking-news detection uses Claude Sonnet (quality-critical).
 
 ### What it does every day
 
 | Step | Agent / Component | Output |
 |------|-------------------|--------|
-| **Scrape** | `ScraperAgent` | Up to 1 710 raw articles (30/country × 57) |
+| **Scrape** | `ScraperAgent` | Up to 330 raw articles (15/country × 22) |
 | **Extract** | `ScraperAgent` | Full article text via trafilatura |
-| **Summarise** | `SummarizerAgent` + Claude | 10 curated stories per country, 20-topic diversity |
-| **Detect** | `BreakingNewsAgent` + Claude | Up to 15 cross-source breaking events |
-| **Publish** | `WebGenerator` + Jinja2 | 59 static HTML pages + dated archives + world_news.json |
+| **Summarise** | `SummarizerAgent` + Claude Haiku | 5 curated stories per country, topic diversity |
+| **Detect** | `BreakingNewsAgent` + Claude Sonnet | Up to 15 cross-source breaking events |
+| **Publish** | `WebGenerator` + Jinja2 | 24 static HTML pages + dated archives + world_news.json |
 | **Deploy** | `rsync` → EC2 | Auto-pushes to forwardforecasting.eu/newssummary/ |
 
 ### Monitored countries — 3 sources each
 
 | Region | Countries |
 |--------|-----------|
-| 🌎 Americas (9) | 🇺🇸 USA · 🇨🇦 Canada · 🇲🇽 Mexico · 🇧🇷 Brazil · 🇨🇷 Costa Rica · 🇦🇷 Argentina · 🇨🇴 Colombia · 🇨🇱 Chile · 🇵🇪 Peru |
-| 🌍 Europe (18) | 🇬🇧 UK · 🇫🇷 France · 🇩🇪 Germany · 🇪🇸 Spain · 🇮🇹 Italy · 🇷🇺 Russia · 🇺🇦 Ukraine · 🇹🇷 Turkey · 🇳🇱 Netherlands · 🇵🇹 Portugal · 🇵🇱 Poland · 🇸🇪 Sweden · 🇳🇴 Norway · 🇩🇰 Denmark · 🇨🇭 Switzerland · 🇦🇹 Austria · 🇧🇪 Belgium · 🇬🇷 Greece |
-| 🌏 Asia-Pacific (15) | 🇯🇵 Japan · 🇨🇳 China · 🇮🇳 India · 🇦🇺 Australia · 🇹🇼 Taiwan · 🇸🇬 Singapore · 🇰🇷 South Korea · 🇮🇩 Indonesia · 🇵🇰 Pakistan · 🇹🇭 Thailand · 🇻🇳 Vietnam · 🇲🇾 Malaysia · 🇵🇭 Philippines · 🇧🇩 Bangladesh · 🇳🇿 New Zealand |
-| 🕌 Middle East (6) | 🇸🇦 Saudi Arabia · 🇮🇷 Iran · 🇦🇪 UAE · 🇮🇱 Israel · 🇮🇶 Iraq · 🇶🇦 Qatar |
-| 🌍 Africa (9) | 🇿🇦 South Africa · 🇲🇦 Morocco · 🇪🇬 Egypt · 🇳🇬 Nigeria · 🇰🇪 Kenya · 🇪🇹 Ethiopia · 🇬🇭 Ghana · 🇩🇿 Algeria · 🇹🇳 Tunisia |
+| 🌎 Americas (6) | 🇺🇸 USA · 🇨🇦 Canada · 🇲🇽 Mexico · 🇨🇷 Costa Rica · 🇧🇷 Brazil · 🇦🇷 Argentina |
+| 🌍 Europe (6) | 🇬🇧 UK · 🇫🇷 France · 🇩🇪 Germany · 🇪🇸 Spain · 🇮🇹 Italy · 🇷🇺 Russia |
+| 🌏 Asia-Pacific (7) | 🇨🇳 China · 🇯🇵 Japan · 🇮🇳 India · 🇦🇺 Australia · 🇰🇷 South Korea · 🇹🇼 Taiwan · 🇸🇬 Singapore |
+| 🌍 Africa (3) | 🇿🇦 South Africa · 🇲🇦 Morocco · 🇪🇬 Egypt |
 
 ---
 

@@ -35,7 +35,7 @@ CRITICAL RULES:
 - The "source" field must match the exact source name from the input.
 - Write in clear, journalistic English regardless of the article's original language.
 - Summaries must be factual and neutral (2–4 sentences each).
-- Select up to 10 stories, prioritising significance AND topic diversity.
+- Select up to 5 stories, prioritising significance AND topic diversity.
 
 TOPIC DIVERSITY — when articles are available, aim to include at least one story \
 covering each of the following areas:
@@ -94,7 +94,7 @@ class SummarizerAgent(BaseAgent):
                 "url":         a.get("url", ""),
                 "source_home": a.get("source_home", ""),
                 "published":   a.get("published", ""),
-                "content":     (a.get("content") or a.get("summary", ""))[:2000],
+                "content":     (a.get("content") or a.get("summary", ""))[:800],
             }
             for a in articles
             if a.get("title")

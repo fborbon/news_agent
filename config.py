@@ -15,29 +15,20 @@ STATIC_DIR     = BASE_DIR / "web" / "static"
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 
 ORCHESTRATOR_MODEL = "claude-sonnet-4-6"
-SUMMARIZER_MODEL   = "claude-sonnet-4-6"
+SUMMARIZER_MODEL   = "claude-haiku-4-5-20251001"
 SCRAPER_MODEL      = "claude-haiku-4-5-20251001"
 BREAKING_MODEL     = "claude-sonnet-4-6"
 
-# Ordered for display grouping: original 8, Americas, Asia-Pacific, Europe/Eurasia, Middle East, Africa
+# 22 countries — educational scope, cost-optimised
 REGIONS = [
-    # Original
-    "usa", "uk", "france", "germany", "spain", "japan", "china", "italy",
     # Americas
-    "canada", "mexico", "brazil", "costa_rica",
-    "argentina", "colombia", "chile", "peru",
+    "usa", "canada", "mexico", "costa_rica", "brazil", "argentina",
+    # Europe
+    "uk", "france", "germany", "spain", "italy", "russia",
     # Asia-Pacific
-    "india", "australia", "taiwan", "singapore", "south_korea",
-    "indonesia", "pakistan", "thailand", "vietnam", "malaysia", "philippines", "bangladesh", "new_zealand",
-    # Europe / Eurasia
-    "russia", "ukraine", "turkey",
-    "netherlands", "portugal", "poland", "sweden", "norway", "denmark", "switzerland", "austria", "belgium", "greece",
-    # Middle East
-    "saudi_arabia", "iran", "uae",
-    "israel", "iraq", "qatar",
+    "china", "japan", "india", "australia", "south_korea", "taiwan", "singapore",
     # Africa
     "south_africa", "morocco", "egypt",
-    "nigeria", "kenya", "ethiopia", "ghana", "algeria", "tunisia",
 ]
 
 REGION_META = {
@@ -140,12 +131,12 @@ BREAKING_CATEGORIES = {
     "natural_disaster":          {"label": "Natural Disaster",        "icon": "🌪️",  "color": "#27ae60"},
 }
 
-SCHEDULE_TIMES = [(0, 15), (7, 15), (12, 15), (18, 15)]  # (hour, minute) UTC
+SCHEDULE_TIMES = [(7, 15)]  # (hour, minute) UTC — single daily run
 
 # When set, output is copied here locally instead of rsynced over SSH.
 # Use on the EC2 itself: DEPLOY_LOCAL_DIR=/var/www/forwardforecasting/newssummary
 DEPLOY_LOCAL_DIR = os.getenv("DEPLOY_LOCAL_DIR", "")
 
-MAX_ARTICLES_PER_SOURCE = 10
-MAX_ARTICLE_CHARS       = 4000
+MAX_ARTICLES_PER_SOURCE = 5
+MAX_ARTICLE_CHARS       = 1500
 RSS_TIMEOUT             = 15
