@@ -138,10 +138,22 @@ class BaseAgent(ABC):
         """Route a tool-use call to the appropriate implementation."""
 
     def _parse_result(self, text: str) -> Any:
+        import re
         t = (text or "").strip()
+        # Strip <thinking>...</thinking> blocks emitted by Nova extended reasoning
+        t = re.sub(r"<thinking>.*?</thinking>", "", t, flags=re.DOTALL).strip()
         if t.startswith("```"):
             t = t.split("\n", 1)[-1]
             t = t.rsplit("```", 1)[0].strip()
+        # Locate the first JSON object or array in case the model added a preamble
+        for start_char, end_char in (("{", "}"), ("[", "]")):
+            idx = t.find(start_char)
+            if idx != -1:
+                candidate = t[idx:]
+                try:
+                    return json.loads(candidate)
+                except (json.JSONDecodeError, TypeError):
+                    pass
         try:
             return json.loads(t)
         except (json.JSONDecodeError, TypeError):

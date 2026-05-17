@@ -64,16 +64,16 @@ NEWS_SOURCES: dict[str, list[dict]] = {
         {"name": "Agência Brasil",        "rss": "https://agenciabrasil.ebc.com.br/rss/ultimasnoticias/feed.xml",                          "home": "https://agenciabrasil.ebc.com.br",         "country": "Brazil"},
     ],
     "costa_rica": [
-        {"name": "The Tico Times",        "rss": "https://ticotimes.net/feed",                                                             "home": "https://ticotimes.net",                    "country": "Costa Rica"},
-        {"name": "CRHoy",                 "rss": "https://www.crhoy.com/feed/",                                                            "home": "https://www.crhoy.com",                    "country": "Costa Rica"},
-        {"name": "La Nación CR",          "rss": "https://www.nacion.com/arc/outboundfeeds/rss/",                                          "home": "https://www.nacion.com",                   "country": "Costa Rica"},
+        {"name": "Q Costa Rica",          "rss": "https://qcostarica.com/feed/",                                                           "home": "https://qcostarica.com",                   "country": "Costa Rica"},
+        {"name": "Inside Costa Rica",     "rss": "https://insidecostarica.com/feed/",                                                      "home": "https://insidecostarica.com",              "country": "Costa Rica"},
+        {"name": "Semanario Universidad", "rss": "https://semanariouniversidad.com/feed/",                                                 "home": "https://semanariouniversidad.com",         "country": "Costa Rica"},
     ],
 
     # ── Americas (expanded) ───────────────────────────────────────────────────
     "argentina": [
         {"name": "Buenos Aires Herald",  "rss": "https://www.buenosairesherald.com/feed",                        "home": "https://www.buenosairesherald.com",   "country": "Argentina"},
         {"name": "MercoPress",           "rss": "https://en.mercopress.com/rss",                                 "home": "https://en.mercopress.com",           "country": "Argentina"},
-        {"name": "Infobae English",      "rss": "https://www.infobae.com/feeds/rss/",                            "home": "https://www.infobae.com",             "country": "Argentina"},
+        {"name": "La Nación AR",         "rss": "https://www.lanacion.com.ar/arc/outboundfeeds/rss/",            "home": "https://www.lanacion.com.ar",         "country": "Argentina"},
     ],
     "colombia": [
         {"name": "Colombia Reports",     "rss": "https://colombiareports.com/feed/",                             "home": "https://colombiareports.com",         "country": "Colombia"},
