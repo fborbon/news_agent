@@ -1,4 +1,4 @@
-# 🌍 Global News Intelligence Agent
+# 🌍 Global News Agent
 
 **🔴 Live site → [https://www.forwardforecasting.eu/globalnews/](https://www.forwardforecasting.eu/globalnews/)**
 
