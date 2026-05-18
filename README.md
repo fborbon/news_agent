@@ -29,6 +29,7 @@
 9. [Setup & Usage](#9-setup--usage)
 10. [Configuration Reference](#10-configuration-reference)
 11. [Cost & Resource Consumption](#11-cost--resource-consumption)
+12. [Auditing](#12-auditing)
 
 ---
 
