@@ -2,7 +2,11 @@
 
 **🔴 Live site → [https://www.forwardforecasting.eu/globalnews/](https://www.forwardforecasting.eu/globalnews/)**
 
-> A multi-agent AI system that scrapes, summarises, and analyses the world's top newspapers every day — covering **22 countries · 66 RSS sources** — and publishing a fully static news website powered by Amazon Nova on AWS Bedrock. Features an interactive world map with hover-to-preview news popups.
+> A multi-agent AI system that scrapes, summarises, and analyses the world's top newspapers every day — covering **22 countries · 66 RSS sources** — and publishing a fully static news website powered by Amazon Nova on AWS Bedrock. Features an interactive world map with hover-to-preview news popups and a breaking-news detection engine that synthesises cross-source events across all monitored countries.
+>
+> **Main technologies:** Python · AWS Bedrock (Amazon Nova Lite + Pro) · boto3 · APScheduler · feedparser · trafilatura · httpx · Jinja2 (static site generation) · EC2 (cron deployment)
+>
+> **Monthly cost:** ~$0.93/month (Bedrock AI only) or ~$19.75/month including the shared EC2 instance. Full breakdown in [Section 11 — Cost & Resource Consumption](#11-cost--resource-consumption).
 
 ![Python](https://img.shields.io/badge/Python-3.11+-3776ab?logo=python&logoColor=white)
 ![AWS Bedrock](https://img.shields.io/badge/AWS-Bedrock-FF9900?logo=amazonwebservices&logoColor=white)
@@ -815,3 +819,33 @@ The pipeline runs as a cron job on an existing `t3.small` instance (eu-west-1) t
 | 1 run/day + Haiku | 1 | 57 | Claude Haiku | ~$24 |
 | Reduced countries | 1 | 22 | Claude Haiku | ~$8 |
 | **Current (Bedrock)** | **1** | **22** | **Nova Lite + Pro** | **~$0.93** |
+
+---
+
+## 12. Auditing
+
+This section provides a structured checklist for review by an IT expert and an AI / journalism subject-matter expert.
+
+### Audit Items
+
+- **Cost & resource minimization** — Monthly Bedrock cost is $0.93, reduced from an initial $427/month through model routing (Nova Lite for summarization, Nova Pro for breaking news), country reduction (57 → 22), and run frequency reduction (4 → 1/day). The cost evolution is transparently documented.
+- **IT architecture** — Multi-agent pipeline with disk-caching and `--resume` flag for crash recovery. Parallel region processing (4 `ThreadPoolExecutor` workers). Appropriate for a daily batch workload. Separation between scraping, summarizing, detecting, and rendering is clean.
+- **Code efficiency** — Token budgets are carefully managed at each stage (article slimming to 2,000 chars, digest slimming to 100 chars). The single-call BreakingNewsAgent eliminates accumulated tool-call context. Exponential back-off handles Bedrock throttling.
+- **Cybersecurity** — AWS credentials stored in `.env` (correct practice). On an EC2 instance, an IAM instance role would eliminate the need for stored credentials entirely. Jinja2 auto-escaping prevents XSS in generated HTML. `rsync` over SSH for deployment. robots.txt compliance for scraped newspaper sites is not documented.
+- **Readability & maintainability** — Mermaid diagrams cover all major data flows. `BaseAgent` agentic loop is cleanly abstracted. Configuration is centralized in `config.py`. The honest documentation of the retired multi-turn approach aids future maintainers.
+- **AI / ML model adequacy** — Nova Lite is cost-optimal for structured JSON summarization with multilingual comprehension. Nova Pro is appropriately selected for the harder cross-source reasoning task. Prompt contracts with concrete JSON schema examples improve output reliability.
+- **Legal & ethical considerations** — Article content scraping and AI summarization may implicate copyright under the EU DSA and copyright directives depending on how output is published. Original source URLs are preserved in output (positive). Content is attributed to named sources.
+- **Other** — No alerting or monitoring for pipeline failures (silent failures would leave the site with stale content). RSS feed availability is not monitored. The static site does not update intra-day between scheduled runs.
+
+### Summary Table
+
+| Audit Item | Claude's Assessment | Human Expert Assessment |
+|---|---|---|
+| Cost & resource minimization | $0.93/month Bedrock; well-optimized from $427/month baseline. Cost evolution is documented. EC2 cost is shared and incremental. | |
+| IT architecture | Clean multi-agent pipeline with crash recovery. Parallel region processing. Appropriate for daily batch. | |
+| Code efficiency | Token slimming at every stage prevents rate-limit breaches. Single-call BreakingNews design is the right trade-off. | |
+| Cybersecurity | .env for credentials is correct; IAM instance role on EC2 would be stronger. Jinja2 auto-escaping prevents XSS. robots.txt compliance undocumented. | |
+| Readability & maintainability | Mermaid diagrams, centralized config, and honest documentation of retired approaches aid maintainability. | |
+| AI / ML model adequacy | Nova Lite / Nova Pro routing is well-justified. Prompt contracts and schema examples improve JSON reliability. | |
+| Legal & ethical considerations | Article summarization may raise copyright questions under EU law. Source attribution and URL preservation are positive mitigations. | |
+| Other | No pipeline failure alerting or RSS availability monitoring. Static site has no intra-day update mechanism. | |
