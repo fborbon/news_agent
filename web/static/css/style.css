@@ -484,3 +484,7 @@ img { max-width: 100%; }
   .switcher-label { min-width: 5rem; }
 }
 .main-content { padding-top: 1.5rem; padding-bottom: 4rem; }
+
+/* ── Last pipeline run timestamp in footer ───────────────────────── */
+.last-run { color: var(--text-muted); margin-top: .3rem; }
+.last-run strong { color: var(--accent); }

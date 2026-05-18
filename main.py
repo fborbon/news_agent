@@ -13,7 +13,7 @@ import argparse
 import json
 import subprocess
 import sys
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 from rich.console import Console
@@ -181,11 +181,14 @@ def run_pipeline(resume: bool = False) -> None:
     orchestrator = OrchestratorAgent()
     pipeline_result = orchestrator.run_pipeline(resume=resume)
 
+    generated_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+
     generator = WebGenerator()
     generator.generate(
         region_summaries=pipeline_result["region_summaries"],
         breaking_events=pipeline_result["breaking_events"],
         today=pipeline_result["date"],
+        generated_at=generated_at,
     )
 
     console.print(Panel.fit(

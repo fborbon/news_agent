@@ -69,7 +69,7 @@ class WebGenerator:
     # Public entry point
     # ------------------------------------------------------------------
 
-    def generate(self, region_summaries: dict[str, dict], breaking_events: list[dict], today: str) -> None:
+    def generate(self, region_summaries: dict[str, dict], breaking_events: list[dict], today: str, generated_at: str | None = None) -> None:
         console.log("[cyan]Generating static site …[/cyan]")
         # Clear stale region pages so removed countries don't persist
         regions_dir = self.out / "regions"
@@ -78,10 +78,10 @@ class WebGenerator:
         regions_dir.mkdir()
         self._copy_static()
         topic_highlights = self._build_topic_highlights(region_summaries)
-        self._render_index(region_summaries, breaking_events, today, topic_highlights)
+        self._render_index(region_summaries, breaking_events, today, topic_highlights, generated_at)
         for region, digest in region_summaries.items():
-            self._render_region(region, digest, today)
-        self._render_breaking(breaking_events, today)
+            self._render_region(region, digest, today, generated_at)
+        self._render_breaking(breaking_events, today, generated_at)
         self._save_json(region_summaries, breaking_events, today)
         self._save_world_news(region_summaries)
         self._save_archive_index(today)
@@ -93,10 +93,10 @@ class WebGenerator:
     # ------------------------------------------------------------------
 
     def _render_index(self, summaries: dict, breaking: list, today: str,
-                      topic_highlights: dict) -> None:
+                      topic_highlights: dict, generated_at: str | None = None) -> None:
         tmpl = self.env.get_template("index.html")
         region_cards = []
-        for region, meta in REGION_META.items():
+        for region, meta in _ACTIVE_REGION_META.items():
             digest = summaries.get(region, {})
             region_cards.append({
                 "key":      region,
@@ -109,6 +109,7 @@ class WebGenerator:
         html = tmpl.render(
             **_BASE_CTX,
             today=today,
+            generated_at=generated_at,
             region_cards=region_cards,
             breaking_events=breaking,
             critical_count=sum(1 for e in breaking if e.get("severity") == "critical"),
@@ -119,12 +120,13 @@ class WebGenerator:
         )
         (self.out / "index.html").write_text(html, encoding="utf-8")
 
-    def _render_region(self, region: str, digest: dict, today: str) -> None:
+    def _render_region(self, region: str, digest: dict, today: str, generated_at: str | None = None) -> None:
         tmpl = self.env.get_template("region.html")
         meta = REGION_META.get(region, {"label": region, "flag": "", "lang": "", "group": ""})
         html = tmpl.render(
             **_BASE_CTX,
             today=today,
+            generated_at=generated_at,
             region=region,
             meta=meta,
             digest=digest,
@@ -134,7 +136,7 @@ class WebGenerator:
         )
         (self.out / "regions" / f"{region}.html").write_text(html, encoding="utf-8")
 
-    def _render_breaking(self, events: list, today: str) -> None:
+    def _render_breaking(self, events: list, today: str, generated_at: str | None = None) -> None:
         tmpl = self.env.get_template("breaking.html")
         grouped: dict[str, list] = {k: [] for k in BREAKING_CATEGORIES}
         for event in events:
@@ -145,6 +147,7 @@ class WebGenerator:
         html = tmpl.render(
             **_BASE_CTX,
             today=today,
+            generated_at=generated_at,
             events=events,
             grouped=grouped,
             static_root="static",
