@@ -1,4 +1,4 @@
-# RSS feed definitions — exactly 3 verified working sources per country.
+# RSS feed definitions — exactly 3 verified working sources per country (5 for costa_rica).
 # All feeds tested live. Claude translates non-English sources automatically.
 
 NEWS_SOURCES: dict[str, list[dict]] = {
@@ -64,6 +64,8 @@ NEWS_SOURCES: dict[str, list[dict]] = {
         {"name": "Agência Brasil",        "rss": "https://agenciabrasil.ebc.com.br/rss/ultimasnoticias/feed.xml",                          "home": "https://agenciabrasil.ebc.com.br",         "country": "Brazil"},
     ],
     "costa_rica": [
+        {"name": "La Nación",             "rss": "https://www.nacion.com/arc/outboundfeeds/rss/",                                          "home": "https://www.nacion.com",                   "country": "Costa Rica"},
+        {"name": "La República",          "rss": "https://www.larepublica.net/feed/",                                                      "home": "https://www.larepublica.net",              "country": "Costa Rica"},
         {"name": "Q Costa Rica",          "rss": "https://qcostarica.com/feed/",                                                           "home": "https://qcostarica.com",                   "country": "Costa Rica"},
         {"name": "Inside Costa Rica",     "rss": "https://insidecostarica.com/feed/",                                                      "home": "https://insidecostarica.com",              "country": "Costa Rica"},
         {"name": "Semanario Universidad", "rss": "https://semanariouniversidad.com/feed/",                                                 "home": "https://semanariouniversidad.com",         "country": "Costa Rica"},
