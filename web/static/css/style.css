@@ -382,39 +382,60 @@ img { max-width: 100%; }
 }
 @media (max-width: 768px) { .breaking-layout { grid-template-columns: 1fr; } }
 
-/* Mobile sidebar toggle button */
-.sidebar-toggle {
+/* Sidebar overlay (mobile) */
+.sidebar-overlay {
   display: none;
-  width: 100%;
-  padding: .6rem 1rem;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.5);
+  z-index: 199;
+}
+.sidebar-overlay.visible { display: block; }
+
+/* Sidebar edge-tab handle (mobile only) */
+.sidebar-tab {
+  display: none;
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 201;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  color: var(--text);
-  font-size: .875rem;
-  font-weight: 600;
+  border-right: none;
+  border-radius: var(--radius) 0 0 var(--radius);
+  padding: .65rem .45rem;
   cursor: pointer;
-  text-align: left;
-  margin-bottom: .5rem;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
+  gap: .25rem;
+  color: var(--text-muted);
+  font-size: .65rem;
+  font-weight: 600;
+  box-shadow: -2px 0 10px rgba(0,0,0,.4);
+  transition: color .15s;
 }
-.sidebar-toggle-arrow { transition: transform .2s; }
-.sidebar-toggle.open .sidebar-toggle-arrow { transform: rotate(180deg); }
+.sidebar-tab:hover { color: var(--text); }
+.sidebar-tab .tab-icon { font-size: 1.05rem; }
 
 @media (max-width: 768px) {
-  .sidebar-toggle { display: flex; }
+  .sidebar-tab { display: flex; }
   .breaking-sidebar {
-    overflow: hidden;
-    max-height: 0;
-    padding: 0 1.25rem;
-    border-width: 0;
-    transition: max-height .3s ease, padding .3s ease, border-width .3s ease;
-  }
-  .breaking-sidebar.open {
-    max-height: 600px;
+    position: fixed;
+    top: 5rem;
+    right: 0;
+    width: 240px;
+    max-height: calc(100vh - 5.5rem);
+    overflow-y: auto;
     padding: 1.25rem;
     border-width: 1px;
+    border-radius: var(--radius) 0 0 var(--radius);
+    z-index: 200;
+    transform: translateX(calc(100% + 1px));
+    transition: transform .3s ease;
+  }
+  .breaking-sidebar.open {
+    transform: translateX(0);
   }
 }
 

@@ -79,6 +79,38 @@ if (dateSelect) {
     });
 }
 
+/* ── Breaking page sidebar drawer (mobile) ───────────────────────── */
+const sidebarTab     = document.getElementById('sidebar-tab');
+const sidebarOverlay = document.getElementById('sidebar-overlay');
+const breakingSidebar = document.getElementById('breaking-sidebar');
+
+function openSidebar() {
+  if (!breakingSidebar) return;
+  breakingSidebar.classList.add('open');
+  if (sidebarOverlay) sidebarOverlay.classList.add('visible');
+  if (sidebarTab) sidebarTab.setAttribute('aria-expanded', 'true');
+}
+function closeSidebar() {
+  if (!breakingSidebar) return;
+  breakingSidebar.classList.remove('open');
+  if (sidebarOverlay) sidebarOverlay.classList.remove('visible');
+  if (sidebarTab) sidebarTab.setAttribute('aria-expanded', 'false');
+}
+
+if (sidebarTab) sidebarTab.addEventListener('click', () => {
+  breakingSidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+});
+if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
+
+// Auto-close drawer after picking a category on mobile
+if (catNav && breakingSidebar) {
+  catNav.addEventListener('click', (e) => {
+    if (window.innerWidth <= 768 && e.target.closest('.cat-nav-link')) {
+      setTimeout(closeSidebar, 250);
+    }
+  });
+}
+
 /* ── Duplicate ticker content to make loop seamless ─────────────── */
 const ticker = document.querySelector('.ticker');
 if (ticker) {

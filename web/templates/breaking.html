@@ -13,13 +13,16 @@
   </p>
 </section>
 
-<div class="breaking-layout">
+<!-- Mobile: overlay backdrop -->
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
 
-  <!-- Sidebar toggle (mobile only) -->
-  <button class="sidebar-toggle" id="sidebar-toggle" aria-expanded="false" aria-controls="breaking-sidebar">
-    ☰ Event Categories
-    <span class="sidebar-toggle-arrow">▼</span>
-  </button>
+<!-- Mobile: edge tab to open the sidebar -->
+<button class="sidebar-tab" id="sidebar-tab" aria-label="Open event categories" aria-expanded="false">
+  <span class="tab-icon">☰</span>
+  <span>Cats</span>
+</button>
+
+<div class="breaking-layout">
 
   <!-- Sidebar nav -->
   <aside class="breaking-sidebar" id="breaking-sidebar">
