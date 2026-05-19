@@ -201,6 +201,41 @@ def run_pipeline(resume: bool = False) -> None:
     _deploy()
 
 
+def run_regenerate() -> None:
+    """Regenerate the static site from the most recent saved pipeline data (no API calls)."""
+    from config import WEB_OUTPUT_DIR
+    data_dir = WEB_OUTPUT_DIR / "data"
+    summaries_files = sorted(data_dir.glob("summaries_*.json"), reverse=True)
+    if not summaries_files:
+        console.print("[red]No saved pipeline data found — run the full pipeline first.[/red]")
+        sys.exit(1)
+
+    latest = summaries_files[0]
+    today = latest.stem[len("summaries_"):]
+    breaking_file = data_dir / f"breaking_{today}.json"
+
+    console.print(f"[cyan]Regenerating site from saved data: {today}[/cyan]")
+
+    with open(latest, encoding="utf-8") as f:
+        region_summaries = json.load(f)
+
+    breaking_events: list = []
+    if breaking_file.exists():
+        with open(breaking_file, encoding="utf-8") as f:
+            breaking_events = json.load(f)
+
+    generated_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    generator = WebGenerator()
+    generator.generate(
+        region_summaries=region_summaries,
+        breaking_events=breaking_events,
+        today=today,
+        generated_at=generated_at,
+    )
+    console.print(f"[green]✓ Site regenerated from {today} data[/green]")
+    _deploy()
+
+
 def run_demo() -> None:
     """Generate the site with mock data — no API calls required."""
     console.print(Panel.fit(
@@ -219,13 +254,18 @@ def run_demo() -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="News Intelligence Agent")
-    parser.add_argument("--now",    action="store_true", help="Run once and exit")
-    parser.add_argument("--resume", action="store_true", help="Skip completed regions, only redo missing steps")
-    parser.add_argument("--demo",   action="store_true", help="Run with mock data (no API calls)")
+    parser.add_argument("--now",        action="store_true", help="Run once and exit")
+    parser.add_argument("--resume",     action="store_true", help="Skip completed regions, only redo missing steps")
+    parser.add_argument("--demo",       action="store_true", help="Run with mock data (no API calls)")
+    parser.add_argument("--regenerate", action="store_true", help="Rebuild site from last saved data, no API calls")
     args = parser.parse_args()
 
     if args.demo:
         run_demo()
+        return
+
+    if args.regenerate:
+        run_regenerate()
         return
 
     if args.now or args.resume:
