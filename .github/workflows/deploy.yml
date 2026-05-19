@@ -24,7 +24,8 @@ jobs:
           script: |
             set -e
             cd ~/news_agent
-            git pull origin main
+            git fetch origin main
+            git reset --hard origin/main
             source .venv/bin/activate
             pip install -r requirements.txt --quiet
             echo "✓ Global News deployed at $(date -u)"
