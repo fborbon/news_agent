@@ -42,6 +42,7 @@
   <button class="tab-btn active" data-tab="map">🌍 World Map</button>
   <button class="tab-btn" data-tab="regions">🗺️ Regional News</button>
   <button class="tab-btn" data-tab="breaking">⚡ Breaking News</button>
+  <button class="tab-btn" data-tab="favorites">⭐ Favorites</button>
 </nav>
 
 <!-- ══ Tab 1: World Map ══════════════════════════════════════════ -->
@@ -88,13 +89,16 @@
         {% if card.stories %}
         <ul class="card-headlines">
           {% for story in card.stories %}
-          <li>
+          <li data-region="{{ card.key }}" data-label="{{ card.label }}" data-flag="{{ card.flag }}"
+              data-headline="{{ story.headline }}" data-url="{{ story.url | default('') }}"
+              data-source="{{ story.source | default('') }}" data-cat="{{ story.category }}">
             <span class="cat-badge cat-{{ story.category }}">{{ story.category }}</span>
             {% if story.url %}
             <a href="{{ story.url }}" target="_blank" rel="noopener" class="headline-link">{{ story.headline }}</a>
             {% else %}
             {{ story.headline }}
             {% endif %}
+            <button class="fav-btn" aria-label="Save to favorites" title="Save to favorites">☆</button>
           </li>
           {% endfor %}
         </ul>
@@ -149,6 +153,11 @@
     {% endif %}
   </section>
 </div><!-- /tab-breaking -->
+
+<!-- ══ Tab 4: Favorites ══════════════════════════════════════════ -->
+<div class="tab-pane" id="tab-favorites">
+  <!-- Populated entirely by JS from localStorage -->
+</div><!-- /tab-favorites -->
 
 {% endblock %}
 

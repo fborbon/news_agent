@@ -34,7 +34,11 @@
 <!-- ── Stories ───────────────────────────────────────────────────── -->
 <section class="stories-grid" id="stories-grid">
   {% for story in digest.stories %}
-  <article class="story-card" data-cat="{{ story.category }}">
+  <article class="story-card" data-cat="{{ story.category }}"
+    data-region="{{ region }}" data-label="{{ meta.label }}" data-flag="{{ meta.flag }}"
+    data-headline="{{ story.headline }}" data-url="{{ story.url | default('') }}"
+    data-source="{{ story.source | default('') }}">
+    <button class="fav-btn fav-btn--card" aria-label="Save to favorites" title="Save to favorites">☆</button>
     <div class="story-meta">
       {% set sm = story_categories.get(story.category) %}
     <span class="cat-badge cat-{{ story.category }}">
