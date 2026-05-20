@@ -30,11 +30,6 @@
     </select>
   </div>
   <p class="hero-sub">{{ region_cards | length }} countries &middot; 171 sources &middot; AI-summarised</p>
-  {% if critical_count > 0 %}
-  <a href="#" class="btn btn-alert" onclick="document.querySelector('[data-tab=breaking]').click();return false;">
-    ⚡ {{ critical_count }} Critical Breaking Event{{ 's' if critical_count != 1 }}
-  </a>
-  {% endif %}
 </section>
 
 <!-- ── Tab nav ────────────────────────────────────────────────────── -->
