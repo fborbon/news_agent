@@ -16,9 +16,6 @@
     <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation">☰</button>
 
     <nav class="main-nav" id="main-nav">
-      <a href="{{ root }}breaking.html" class="nav-alert">⚡ Breaking</a>
-      <span class="nav-divider"></span>
-
       {% for r, m in region_meta.items() %}
       <a href="{{ root }}regions/{{ r }}.html"
          class="nav-region{% if r == active_region %} active{% endif %}"
