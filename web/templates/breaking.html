@@ -71,7 +71,16 @@
       </h2>
 
       {% for ev in grouped[key] %}
-      <article class="breaking-detail-card severity-{{ ev.severity }}" id="{{ ev.id }}">
+      <article class="breaking-detail-card severity-{{ ev.severity }}" id="{{ ev.id }}"
+        data-headline="{{ ev.title }}"
+        data-url="{{ ev.sources[0].url if ev.sources and ev.sources[0].url else '' }}"
+        data-source="{{ ev.sources | map(attribute='name') | join(', ') if ev.sources else '' }}"
+        data-cat="breaking"
+        data-region="global"
+        data-label="Breaking News"
+        data-flag="⚡">
+
+        <button class="fav-btn fav-btn--card" aria-label="Save to favorites" title="Save to favorites">☆</button>
 
         <div class="detail-header">
           <span class="severity-badge-large severity-{{ ev.severity }}">

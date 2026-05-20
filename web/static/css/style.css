@@ -473,6 +473,7 @@ img { max-width: 100%; }
 .breaking-detail-card {
   background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--radius); overflow: hidden; margin-bottom: 1rem;
+  position: relative;
 }
 .detail-header {
   padding: 1rem 1.5rem; display: flex; align-items: flex-start; gap: 1rem;
